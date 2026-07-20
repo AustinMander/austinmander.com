@@ -537,7 +537,7 @@ a { color: inherit; }
     if (ticking) return; ticking = true;
     requestAnimationFrame(() => {
       head.classList.toggle("scrolled", scrollY > 30);
-      if (!reduced) {
+      if (!reduced && !flat) {
         const r = quote.getBoundingClientRect();
         const p = Math.min(1, Math.max(0, (innerHeight * .85 - r.top) / (r.height + innerHeight * .3)));
         const lit = Math.floor(p * words.length * 1.15);
