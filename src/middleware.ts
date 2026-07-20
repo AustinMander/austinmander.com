@@ -162,8 +162,12 @@ export async function middleware(request: NextRequest) {
   });
   
   // Apply Content Security Policy
+  // (skipped for the static byline homepage — it is fully inline by design)
   const csp = getCSP(nonce);
-  response.headers.set('Content-Security-Policy', csp);
+  const p = request.nextUrl.pathname;
+  if (p !== '/' && p !== '/byline.html') {
+    response.headers.set('Content-Security-Policy', csp);
+  }
   
   // Request validation for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
