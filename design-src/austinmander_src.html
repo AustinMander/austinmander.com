@@ -1,0 +1,546 @@
+<title>Austin Mander — engineer, operator</title>
+<style>
+/*__FONTFACES__*/
+
+:root {
+  --ground: #f7f4ed;
+  --panel: #efeadf;
+  --line: #c9c2b2;
+  --line-soft: #ddd6c7;
+  --text: #191714;
+  --muted: #4a4640;
+  --faint: #6b6659;
+  --accent: #c14f1d;
+  --accent-deep: #9c3d12;
+  --display: "Fraunces", georgia, serif;
+  --body: "Source Serif 4", georgia, serif;
+  --mono: "IBM Plex Mono", "SF Mono", monospace;
+  --pad: clamp(20px, 4.5vw, 64px);
+  color-scheme: light;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ground); color: var(--text);
+  font-family: var(--body); font-size: 16.5px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+::selection { background: var(--accent); color: var(--ground); }
+a { color: inherit; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+
+/* atmosphere: ledger grain */
+.grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 40; opacity: .35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- header ---------- */
+.site-head {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px var(--pad);
+  transition: background .4s ease, border-color .4s ease;
+  border-bottom: 1px solid transparent;
+}
+.site-head.scrolled {
+  background: rgba(247,244,237,.88);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--line-soft);
+}
+.brand-name {
+  font-family: var(--display); font-weight: 600; font-size: 19px;
+  letter-spacing: -.01em; text-decoration: none;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+}
+.brand-name .dot { color: var(--accent); }
+.head-nav { display: flex; align-items: center; gap: 24px; }
+.head-nav a.nav-link {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  text-decoration: none; color: var(--muted); transition: color .25s ease;
+}
+.head-nav a.nav-link:hover { color: var(--accent); }
+.btn {
+  display: inline-block; font-family: var(--mono); font-size: 12px;
+  letter-spacing: .1em; text-decoration: none;
+  padding: 11px 20px; border: 1px solid var(--text);
+  color: var(--text); background: transparent;
+  transition: all .3s ease; cursor: pointer;
+}
+.btn:hover { background: var(--text); color: var(--ground); }
+.btn-fill { background: var(--accent); border-color: var(--accent); color: var(--ground); }
+.btn-fill:hover { background: var(--accent-deep); border-color: var(--accent-deep); color: var(--ground); }
+.btn:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---------- hero ---------- */
+.hero { min-height: 100svh; display: flex; align-items: center; padding-top: 90px; padding-bottom: 60px; position: relative; }
+.hero-grid {
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr);
+  gap: clamp(32px, 6vw, 80px); align-items: center; width: 100%;
+}
+.hero-eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .22em;
+  color: var(--faint); display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+}
+.hero-eyebrow::before { content: ""; width: 30px; height: 1px; background: var(--accent); }
+.hero-name {
+  font-family: var(--display); font-weight: 600;
+  font-size: clamp(44px, 7vw, 88px); line-height: 1.02; letter-spacing: -.02em;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+}
+.hero-name .L {
+  display: inline-block;
+  animation: settle .7s cubic-bezier(.2,.7,.2,1) both;
+}
+.hero-name .dot {
+  display: inline-block; color: var(--accent);
+  animation: stamp .5s cubic-bezier(.3,1.6,.4,1) both;
+}
+@keyframes settle {
+  from { opacity: 0; filter: blur(5px); transform: translateY(10px); font-weight: 300; }
+  to { opacity: 1; filter: blur(0); transform: none; font-weight: 600; }
+}
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(2.2); }
+  60% { opacity: 1; transform: scale(.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.hero-statement {
+  font-family: var(--display); font-weight: 400; font-style: italic;
+  font-size: clamp(19px, 2.1vw, 26px); line-height: 1.35; color: var(--muted);
+  margin-top: 22px; max-width: 24ch;
+  font-variation-settings: "SOFT" 60, "WONK" 1;
+}
+.hero-sub { margin-top: 20px; max-width: 50ch; color: var(--muted); font-size: 16px; }
+.hero-sub strong { color: var(--text); font-weight: 600; }
+.hero-ctas { margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+.plate { position: relative; justify-self: end; align-self: center; width: min(100%, 340px); }
+.plate-img {
+  display: block; width: 100%; height: auto; aspect-ratio: 13/12; object-fit: cover;
+  background: #fff; border: 1px solid var(--line);
+  padding: 10px; /* photo print margin */
+  box-shadow: 0 18px 40px -18px rgba(25,23,20,.28), 0 2px 8px rgba(25,23,20,.08);
+  filter: saturate(.96);
+}
+.plate-caption {
+  margin-top: 12px; font-family: var(--mono); font-size: 10.5px;
+  letter-spacing: .18em; color: var(--faint); display: flex; justify-content: space-between;
+}
+
+/* ---------- section scaffolding ---------- */
+.sect { padding: clamp(70px, 9vw, 130px) 0; }
+.sect-head { display: flex; align-items: baseline; gap: 22px; margin-bottom: clamp(32px, 5vw, 60px); }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .22em; color: var(--accent); white-space: nowrap; }
+.sect-head .rule { flex: 1; height: 1px; background: var(--line-soft); }
+.rv { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+.rv.in { opacity: 1; transform: none; }
+.rv-d1 { transition-delay: .08s; } .rv-d2 { transition-delay: .16s; } .rv-d3 { transition-delay: .24s; }
+
+/* ---------- now ---------- */
+.now-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line-soft); }
+.now {
+  padding: clamp(26px, 3.2vw, 44px); position: relative;
+  transition: background .4s ease;
+}
+.now + .now { border-left: 1px solid var(--line-soft); }
+.now:hover { background: rgba(239,234,223,.5); }
+.now-no { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--faint); margin-bottom: 40px; display: flex; justify-content: space-between; }
+.now-title {
+  font-family: var(--display); font-weight: 600; font-size: clamp(21px, 2.2vw, 28px);
+  line-height: 1.15; margin-bottom: 10px; font-variation-settings: "SOFT" 40, "WONK" 0;
+}
+.now-title .dot { color: var(--accent); }
+.now-copy { color: var(--muted); font-size: 15px; max-width: 44ch; }
+.now-link {
+  margin-top: 20px; display: inline-block; font-family: var(--mono); font-size: 11.5px;
+  letter-spacing: .14em; color: var(--muted); text-decoration: none;
+  border-bottom: 1px solid var(--line); padding-bottom: 3px;
+  transition: color .3s ease, border-color .3s ease;
+}
+.now-link:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ---------- bio strip ---------- */
+.bio { display: flex; gap: 18px; max-width: 62ch; color: var(--muted); margin-top: clamp(40px, 5vw, 60px); }
+.bio::before { content: ""; flex: 0 0 30px; height: 1px; background: var(--accent); margin-top: .8em; }
+
+/* ---------- pull quote ---------- */
+.quote-sect { padding: clamp(80px, 11vw, 150px) 0; }
+.quote {
+  font-family: var(--display); font-weight: 600;
+  font-size: clamp(26px, 3.8vw, 48px); line-height: 1.2; letter-spacing: -.012em;
+  max-width: 22ch; margin: 0 auto; text-align: center;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+}
+.quote .w { opacity: .16; transition: opacity .45s ease, color .45s ease; }
+.quote .w.lit { opacity: 1; }
+.quote .w.hot { color: var(--accent); font-style: italic; }
+.quote-src { text-align: center; margin-top: 26px; font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--faint); }
+
+/* ---------- receipts ---------- */
+.rc-list { border-top: 1px solid var(--line-soft); }
+.rc {
+  display: grid; grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: clamp(16px, 3vw, 40px); align-items: baseline;
+  padding: clamp(24px, 3vw, 40px) 0; border-bottom: 1px solid var(--line-soft);
+  position: relative; transition: background .35s ease;
+}
+.rc::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent); transform: scaleY(0); transform-origin: top;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.rc:hover { background: rgba(239,234,223,.5); }
+.rc:hover::after { transform: scaleY(1); }
+.rc-meta { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--faint); padding-left: 16px; }
+.rc-title {
+  font-family: var(--display); font-weight: 600; font-size: clamp(19px, 2vw, 26px);
+  font-variation-settings: "SOFT" 40, "WONK" 0; display: block;
+}
+.rc-desc { display: block; color: var(--muted); font-size: 14.5px; margin-top: 6px; max-width: 58ch; }
+.rc-tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--faint); white-space: nowrap; }
+
+/* ---------- principles ---------- */
+.pr-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-soft); }
+.pr { padding: clamp(22px, 2.6vw, 38px); border-right: 1px solid var(--line-soft); }
+.pr:last-child { border-right: none; }
+.pr-no { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--accent); display: block; margin-bottom: 12px; }
+.pr-title { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 1.6vw, 22px); margin-bottom: 8px; font-variation-settings: "SOFT" 40, "WONK" 0; }
+.pr-copy { color: var(--muted); font-size: 14px; }
+
+/* ---------- writing ---------- */
+.wr-row { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); padding: clamp(24px, 3vw, 36px) 0; }
+.wr-copy { color: var(--muted); max-width: 52ch; }
+
+/* ---------- contact ---------- */
+.contact { text-align: center; padding: clamp(90px, 12vw, 160px) 0; }
+.contact-title {
+  font-family: var(--display); font-weight: 600;
+  font-size: clamp(32px, 5vw, 64px); line-height: 1.05; letter-spacing: -.015em;
+  max-width: 18ch; margin: 0 auto;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+}
+.contact-title .stroke { color: var(--accent); font-style: italic; font-variation-settings: "SOFT" 60, "WONK" 1; }
+.contact-sub { color: var(--muted); margin-top: 18px; max-width: 46ch; margin-left: auto; margin-right: auto; }
+.contact-actions { margin-top: 36px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.contact-links { margin-top: 30px; display: flex; justify-content: center; gap: 26px; }
+.contact-links a {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; color: var(--muted);
+  text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 3px;
+  transition: color .3s ease, border-color .3s ease;
+}
+.contact-links a:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ---------- footer ---------- */
+.site-foot {
+  border-top: 1px solid var(--line-soft); padding: 28px var(--pad);
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--faint);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 880px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .plate { justify-self: start; width: min(78%, 320px); order: -1; }
+  .now-grid { grid-template-columns: 1fr; }
+  .now + .now { border-left: none; border-top: 1px solid var(--line-soft); }
+  .rc { grid-template-columns: 1fr; gap: 8px; }
+  .rc-meta { padding-left: 0; }
+  .pr-grid { grid-template-columns: 1fr; }
+  .pr { border-right: none; border-bottom: 1px solid var(--line-soft); }
+  .pr:last-child { border-bottom: none; }
+  .wr-row { flex-direction: column; }
+  .head-nav a.nav-link { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero-name .L, .hero-name .dot { animation: none; }
+  .rv { opacity: 1; transform: none; transition: none; }
+  .quote .w { opacity: 1; }
+  * { transition-duration: .01ms !important; }
+}
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="site-head" id="siteHead">
+  <a class="brand-name" href="#top">Austin Mander<span class="dot">.</span></a>
+  <nav class="head-nav" aria-label="Primary">
+    <a class="nav-link" href="#now">NOW</a>
+    <a class="nav-link" href="#work">WORK</a>
+    <a class="nav-link" href="#writing">WRITING</a>
+    <a class="btn" href="https://mander.ai">THE STUDIO ↗</a>
+  </nav>
+</header>
+
+<main id="top">
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="hero-eyebrow">ENGINEER — OPERATOR — UNITED KINGDOM</p>
+        <h1 class="hero-name" id="heroName">Austin<br>Mander<span class="dot">.</span></h1>
+        <p class="hero-statement">I build AI systems that take over real work.</p>
+        <p class="hero-sub">
+          Fractional CTO of an AI company-intelligence platform used by institutional
+          research teams. Founder of <strong>Mander</strong> — a studio where one senior
+          engineer directs a fleet of AI agents to ship production software.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-fill" href="https://mander.ai">WORK WITH ME ↗</a>
+          <a class="btn" href="mailto:hello@mander.ai">EMAIL</a>
+        </div>
+      </div>
+      <figure class="plate rv in">
+        <img class="plate-img" src="__PORTRAIT__" alt="Portrait of Austin Mander" width="900" height="833">
+        <figcaption class="plate-caption"><span>AUSTIN MANDER</span><span>UNITED KINGDOM</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ NOW ============ -->
+  <section class="sect" id="now" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sect-head">
+        <span class="eyebrow">NOW</span>
+        <span class="rule"></span>
+      </div>
+      <div class="now-grid">
+        <article class="now rv">
+          <p class="now-no"><span>01</span><span>IN PRODUCTION</span></p>
+          <h2 class="now-title">Fractional CTO — AI company intelligence</h2>
+          <p class="now-copy">
+            Technical lead of a platform that reads the news and filings so research teams
+            don't have to — ingestion and enrichment pipelines, hybrid retrieval, and
+            agents that deliver briefings. Running in production with pilot clients.
+          </p>
+        </article>
+        <article class="now rv rv-d1">
+          <p class="now-no"><span>02</span><span>THE STUDIO</span></p>
+          <h2 class="now-title">Mander<span class="dot">.</span></h2>
+          <p class="now-copy">
+            The software you can't buy: fixed-scope production systems, built by one
+            senior engineer directing an orchestrated fleet of AI agents. Every line
+            reviewed. You own the repo.
+          </p>
+          <a class="now-link" href="https://mander.ai">MANDER.AI ↗</a>
+        </article>
+      </div>
+      <p class="bio rv">
+        Two years into a law degree, it became obvious where leverage was moving — so I
+        left to build systems instead. The habits stayed: say exactly what you mean, know
+        what you don't know, never ship a claim you can't defend. It turns out that's
+        precisely what working with AI demands.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ PULL QUOTE ============ -->
+  <section class="quote-sect">
+    <div class="wrap">
+      <p class="quote" id="quoteText">
+        Anyone can get AI to a demo now. The distance between a demo and a system a
+        business runs on — that's the work.
+      </p>
+      <p class="quote-src rv">— WORKING NOTES, 2026</p>
+    </div>
+  </section>
+
+  <!-- ============ RECEIPTS ============ -->
+  <section class="sect" id="work" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sect-head">
+        <span class="eyebrow">SELECTED WORK</span>
+        <span class="rule"></span>
+      </div>
+      <div class="rc-list">
+        <div class="rc rv">
+          <span class="rc-meta">2025 — NOW</span>
+          <span>
+            <span class="rc-title">Company-intelligence platform</span>
+            <span class="rc-desc">News and filings ingestion, hybrid retrieval, agent-delivered briefings for institutional research. Fractional CTO — architecture through production operations.</span>
+          </span>
+          <span class="rc-tag">FINTECH · IN PRODUCTION</span>
+        </div>
+        <div class="rc rv">
+          <span class="rc-meta">2026</span>
+          <span>
+            <span class="rc-title">Foresight</span>
+            <span class="rc-desc">A living portfolio knowledge base that reads an investment portfolio continuously and answers before the meeting. Built as a working demo for a global insurer's investment office.</span>
+          </span>
+          <span class="rc-tag">INSURANCE · DEMO</span>
+        </div>
+        <div class="rc rv">
+          <span class="rc-meta">2026</span>
+          <span>
+            <span class="rc-title">Deep-sourcing CRM</span>
+            <span class="rc-desc">An agent-driven CRM that researches prospects like an analyst — sourcing, enriching, and drafting outreach in the founder's voice. In daily use.</span>
+          </span>
+          <span class="rc-tag">GTM · IN USE</span>
+        </div>
+        <div class="rc rv">
+          <span class="rc-meta">ONGOING</span>
+          <span>
+            <span class="rc-title">The rig</span>
+            <span class="rc-desc">The agent-fleet development system behind all of the above — orchestration, review gates, testing discipline. This site and mander.ai were designed and shipped with it.</span>
+          </span>
+          <a class="rc-tag" href="https://github.com/austinmander" style="text-decoration: none;">GITHUB ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRINCIPLES ============ -->
+  <section class="sect" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sect-head">
+        <span class="eyebrow">HOW I WORK</span>
+        <span class="rule"></span>
+      </div>
+      <div class="pr-grid">
+        <div class="pr rv">
+          <span class="pr-no">P-01</span>
+          <h3 class="pr-title">Straight answers</h3>
+          <p class="pr-copy">What it takes to build, what it costs — or that you shouldn't build it. If it's the last one, you'll hear it in the first fifteen minutes.</p>
+        </div>
+        <div class="pr rv rv-d1">
+          <span class="pr-no">P-02</span>
+          <h3 class="pr-title">Engineer-signed</h3>
+          <p class="pr-copy">Agents draft; I read, rewrite, and sign every merge. Tests and review gates on everything. Nothing ships on machine confidence alone.</p>
+        </div>
+        <div class="pr rv rv-d2">
+          <span class="pr-no">P-03</span>
+          <h3 class="pr-title">You own everything</h3>
+          <p class="pr-copy">Your repo, your infrastructure, your keys — from the first commit. If I disappeared tomorrow, it keeps running.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WRITING ============ -->
+  <section class="sect" id="writing" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sect-head">
+        <span class="eyebrow">WRITING</span>
+        <span class="rule"></span>
+      </div>
+      <div class="wr-row rv">
+        <p class="wr-copy">
+          Occasional, practical notes on building with agent fleets — what buyers actually
+          ask for, what production discipline looks like when agents write the first
+          draft, and what breaks.
+        </p>
+        <a class="now-link" href="https://mander.ai/blog">READ ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE OTHER QUESTION ============ -->
+  <section class="sect" id="learn" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sect-head">
+        <span class="eyebrow">THE OTHER QUESTION</span>
+        <span class="rule"></span>
+      </div>
+      <div class="wr-row rv">
+        <p class="wr-copy">
+          The most common question I get isn't "build this for me" — it's
+          <em>"show me how you're doing it."</em> I'm working on a proper answer. If you
+          want it when it exists — or you'd rather learn it live — say so, and you'll be
+          first to know.
+        </p>
+        <a class="btn" href="mailto:hello@mander.ai?subject=Show%20me%20how">SHOW ME HOW →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <h2 class="contact-title rv">Building something you <span class="stroke">can't buy?</span></h2>
+      <p class="contact-sub rv rv-d1">Commercial work runs through the studio. Everything else — ideas, questions, introductions — lands in the inbox.</p>
+      <div class="contact-actions rv rv-d2">
+        <a class="btn btn-fill" href="https://mander.ai">THE STUDIO ↗</a>
+        <a class="btn" href="mailto:hello@mander.ai">HELLO@MANDER.AI</a>
+      </div>
+      <div class="contact-links rv rv-d3">
+        <a href="https://github.com/austinmander">GITHUB</a>
+        <!-- CLAIM CHECK: add real LinkedIn URL -->
+        <a href="https://mander.ai">MANDER.AI</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <span>© 2026 AUSTIN MANDER</span>
+  <span>SET IN FRAUNCES &amp; SOURCE SERIF — BUILT WITH THE FLEET</span>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const flat = new URLSearchParams(location.search).has("flat");
+
+  /* letterpress name: split into letters with staggered settle */
+  const nameEl = document.getElementById("heroName");
+  if (!reduced && !flat) {
+    const dot = nameEl.querySelector(".dot");
+    nameEl.innerHTML = "";
+    let i = 0;
+    const mk = ch => {
+      const s = document.createElement("span");
+      s.className = "L"; s.textContent = ch;
+      s.style.animationDelay = `${.15 + (i++) * .045}s`;
+      return s;
+    };
+    [..."Austin"].forEach(ch => nameEl.appendChild(mk(ch)));
+    nameEl.appendChild(document.createElement("br"));
+    [..."Mander"].forEach(ch => nameEl.appendChild(mk(ch)));
+    dot.style.animationDelay = `${.15 + i * .045 + .1}s`;
+    nameEl.appendChild(dot);
+  }
+
+  /* quote word split */
+  const quote = document.getElementById("quoteText");
+  const hot = new Set(["distance", "work."]);
+  quote.innerHTML = quote.textContent.trim().split(/\s+/)
+    .map(w => `<span class="w${hot.has(w.toLowerCase()) ? " hot" : ""}">${w}</span>`).join(" ");
+  const words = [...quote.querySelectorAll(".w")];
+
+  /* reveals */
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: .15, rootMargin: "0px 0px -6% 0px" });
+  document.querySelectorAll(".rv").forEach(el => io.observe(el));
+
+  /* scroll loop: header + quote lighting */
+  const head = document.getElementById("siteHead");
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      head.classList.toggle("scrolled", scrollY > 30);
+      if (!reduced && !flat) {
+        const r = quote.getBoundingClientRect();
+        const p = Math.min(1, Math.max(0, (innerHeight * .85 - r.top) / (r.height + innerHeight * .3)));
+        const lit = Math.floor(p * words.length * 1.15);
+        words.forEach((w, i) => w.classList.toggle("lit", i < lit));
+      }
+      ticking = false;
+    });
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  /* flatten mode for full-page capture */
+  if (flat || reduced) {
+    document.querySelectorAll(".rv").forEach(el => el.classList.add("in"));
+    words.forEach(w => w.classList.add("lit"));
+  }
+})();
+</script>

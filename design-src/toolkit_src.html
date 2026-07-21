@@ -1,0 +1,822 @@
+<title>The Toolkit — signature elements, no libraries</title>
+<style>
+/*__FONTFACES__*/
+:root {
+  --ground:#f7f4ed; --panel:#efeadf; --line:#c9c2b2; --line-soft:#ddd6c7;
+  --text:#191714; --muted:#4a4640; --faint:#6b6659;
+  --accent:#c14f1d; --accent-deep:#9c3d12;
+  --dark:#0b0c0e; --dark-text:#e8e6e1; --ember:#ff4d1c; --heat:#ffb347;
+  --pad: clamp(20px, 4.5vw, 60px);
+  color-scheme: light;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--ground); color:var(--text); font-family:"IBM Plex Mono", monospace;
+  font-size:15px; line-height:1.6; overflow-x:hidden; }
+::selection { background:var(--accent); color:var(--ground); }
+.grain { position:fixed; inset:0; pointer-events:none; z-index:40; opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.wrap { max-width:1000px; margin:0 auto; padding-left:var(--pad); padding-right:var(--pad); }
+
+.head { padding:90px 0 20px; }
+.h-title { font-family:"Fraunces", serif; font-weight:600; font-size:clamp(38px,6vw,64px);
+  letter-spacing:-.015em; line-height:1.05; font-variation-settings:"SOFT" 40,"WONK" 0; }
+.h-title em { font-style:italic; color:var(--accent); }
+.h-sub { margin-top:18px; color:var(--muted); max-width:60ch; font-size:14px; }
+.h-sub b { color:var(--accent); font-weight:500; }
+
+.sect { padding:70px 0; border-top:1px solid var(--line-soft); margin-top:70px; }
+.label { font-size:12px; letter-spacing:.22em; color:var(--accent); display:flex; align-items:center; gap:14px; }
+.label::before { content:""; width:30px; height:2px; background:var(--accent); }
+.how { margin-top:10px; color:var(--faint); font-size:13px; max-width:66ch; }
+.stage { margin-top:30px; border:1px solid var(--line-soft); background:rgba(239,234,223,.4); position:relative; }
+.btns { margin-top:14px; display:flex; gap:10px; }
+.btn { font-family:inherit; font-size:12px; letter-spacing:.1em; padding:9px 16px;
+  border:1px solid var(--text); background:transparent; color:var(--text); cursor:pointer;
+  transition:all .25s ease; }
+.btn:hover { background:var(--text); color:var(--ground); }
+
+/* 1: light particles */
+#inkStage { height:220px; }
+#inkCanvas { position:absolute; inset:0; width:100%; height:100%; }
+/* 2: dark particles */
+#hotStage { height:220px; background:var(--dark); border-color:#26292e; }
+#hotCanvas { position:absolute; inset:0; width:100%; height:100%; }
+
+/* 3: letterpress */
+#pressStage { height:170px; display:flex; align-items:center; justify-content:center; }
+#pressName { font-family:"Fraunces", serif; font-weight:600; font-size:clamp(40px,8vw,76px);
+  letter-spacing:-.02em; font-variation-settings:"SOFT" 40,"WONK" 0; }
+#pressName .L { display:inline-block; animation:settle .7s cubic-bezier(.2,.7,.2,1) both; }
+#pressName .dot { display:inline-block; color:var(--accent); animation:stamp .5s cubic-bezier(.3,1.6,.4,1) both; }
+@keyframes settle { from { opacity:0; filter:blur(5px); transform:translateY(10px); font-weight:300; }
+  to { opacity:1; filter:blur(0); transform:none; font-weight:600; } }
+@keyframes stamp { 0% { opacity:0; transform:scale(2.2); } 60% { opacity:1; transform:scale(.92); } 100% { transform:scale(1); } }
+
+/* 4: scroll-lit words */
+.lit-text { font-family:"Fraunces", serif; font-weight:600; font-size:clamp(24px,3.6vw,40px);
+  line-height:1.25; letter-spacing:-.012em; padding:34px; font-variation-settings:"SOFT" 40,"WONK" 0; }
+.lit-text .w { opacity:.16; transition:opacity .45s ease, color .45s ease; }
+.lit-text .w.lit { opacity:1; }
+.lit-text .w.hot { color:var(--accent); font-style:italic; }
+
+/* 5: pinned numeral */
+.pin-outer { height:260vh; position:relative; margin-top:30px; }
+.pin-sticky { position:sticky; top:0; height:100vh; display:flex; align-items:center;
+  border:1px solid var(--line-soft); background:rgba(239,234,223,.4); }
+.pin-grid { display:grid; grid-template-columns:1fr 1fr; gap:30px; align-items:center; width:100%; padding:0 40px; }
+.pin-numeral { font-family:"Fraunces", serif; font-weight:600; font-size:clamp(120px,20vw,260px);
+  line-height:.85; color:transparent; -webkit-text-stroke:1.5px var(--line); position:relative; user-select:none; }
+.pin-numeral .fill { position:absolute; inset:0; color:var(--accent); -webkit-text-stroke:0;
+  clip-path:inset(100% 0 0 0); }
+.pin-copy { color:var(--muted); font-size:14px; }
+.pin-copy b { display:block; font-family:"Fraunces", serif; font-size:22px; color:var(--text);
+  font-weight:600; margin-bottom:6px; }
+@media (max-width:700px) {
+  .pin-outer { height:auto; }
+  .pin-sticky { position:static; height:auto; padding:40px 0; }
+  .pin-numeral { display:none; }
+}
+
+/* 6: marquee */
+.mq { overflow:hidden; padding:20px 0; border-top:1px solid var(--line-soft);
+  border-bottom:1px solid var(--line-soft); margin-top:30px; }
+.mq-track { display:flex; white-space:nowrap; width:max-content; will-change:transform; }
+.mq-chunk { font-size:14px; letter-spacing:.26em; color:var(--faint); padding-right:8px; }
+.mq-chunk em { font-style:normal; color:var(--accent); padding:0 16px; }
+
+/* 7: counters */
+.cnt-grid { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line-soft); margin-top:30px; }
+.cnt { padding:28px; border-right:1px solid var(--line-soft); }
+.cnt:last-child { border-right:none; }
+.cnt .n { font-family:"Fraunces", serif; font-weight:600; font-size:clamp(34px,5vw,54px);
+  font-variant-numeric:tabular-nums lining-nums; }
+.cnt .n em { font-style:normal; color:var(--accent); }
+.cnt .l { font-size:11px; letter-spacing:.14em; color:var(--faint); margin-top:8px; }
+@media (max-width:700px) { .cnt-grid { grid-template-columns:1fr; } .cnt { border-right:none; border-bottom:1px solid var(--line-soft); } .cnt:last-child { border-bottom:none; } }
+
+/* 8: reveals */
+.rv { opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+.rv.in { opacity:1; transform:none; }
+.rv-demo { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:30px; }
+.rv-card { border:1px solid var(--line-soft); background:rgba(239,234,223,.5); padding:22px; font-size:13px; color:var(--muted); }
+.rv-card b { display:block; font-family:"Fraunces", serif; font-size:18px; color:var(--text); margin-bottom:4px; }
+@media (max-width:700px) { .rv-demo { grid-template-columns:1fr; } }
+
+.foot { padding:80px 0 50px; color:var(--faint); font-size:12px; letter-spacing:.14em;
+  display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.foot a { color:var(--muted); }
+
+/* batch 2 stages */
+#flowStage, #fleetStage, #gooStage { height:260px; }
+#portStage { height:340px; cursor:none; }
+#ropeStage { height:150px; }
+#flowCanvas,#portCanvas,#fleetCanvas,#gooCanvas,#ropeCanvas { position:absolute; inset:0; width:100%; height:100%; }
+#breatheStage { height:200px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#breatheText { font-family:"Fraunces", serif; font-size:clamp(44px,9vw,96px); color:var(--text);
+  letter-spacing:-.01em; white-space:nowrap; }
+#breatheText .B { display:inline-block; font-variation-settings:"SOFT" 0, "WONK" 0; }
+#breatheText .sp { display:inline-block; width:.35em; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior:auto; }
+  #pressName .L, #pressName .dot { animation:none; }
+  .rv { opacity:1; transform:none; transition:none; }
+  .lit-text .w { opacity:1; }
+  .pin-outer { height:auto; } .pin-sticky { position:static; height:auto; padding:40px 0; }
+  * { transition-duration:.01ms !important; }
+}
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="wrap head">
+  <h1 class="h-title">The toolkit<span style="color:var(--accent)">.</span><br>Every element, <em>no libraries.</em></h1>
+  <p class="h-sub">Each effect below powers mander.ai or austinmander.com. All of it is
+  <b>vanilla canvas + CSS + JS</b> in a single HTML file: no GSAP, no Three.js, no
+  frameworks. View source on any of it.</p>
+</header>
+
+<main class="wrap">
+
+  <section class="sect" id="s1">
+    <p class="label">01 — INK PARTICLE WORDMARK (LIGHT)</p>
+    <p class="how">Text is drawn to an invisible canvas, its pixels are read back, and every
+    ~3px of opaque ink becomes a particle's home. Particles fly in with per-particle delay,
+    shimmer, and repel from your cursor. The full stop is detected by measuring the bare
+    word's width: everything right of it goes terracotta, at 1.7× size.</p>
+    <div class="stage" id="inkStage"><canvas id="inkCanvas"></canvas></div>
+    <div class="btns"><button class="btn" id="inkReplay">REPLAY ASSEMBLY</button>
+    <button class="btn" id="inkBlast">DISPERSE + RETURN</button></div>
+  </section>
+
+  <section class="sect" id="s2">
+    <p class="label">02 — MOLTEN PARTICLE WORDMARK (DARK)</p>
+    <p class="how">Same engine, two changes: additive blending (overlapping particles get
+    brighter, like embers) and a hot palette from deep orange through amber to white-hot.
+    This is the Forgeline variant. Move your cursor through it.</p>
+    <div class="stage" id="hotStage"><canvas id="hotCanvas"></canvas></div>
+    <div class="btns"><button class="btn" id="hotReplay">REPLAY ASSEMBLY</button>
+    <button class="btn" id="hotBlast">DISPERSE + RETURN</button></div>
+  </section>
+
+  <section class="sect" id="s3">
+    <p class="label">03 — LETTERPRESS SETTLE</p>
+    <p class="how">Pure CSS keyframes. Each letter is a span with a staggered
+    animation-delay: it arrives blurred, light, and low, then settles sharp and bold, like
+    type being pressed. The dot stamps last with an overshoot curve.</p>
+    <div class="stage" id="pressStage"><div id="pressName">Austin Mander<span class="dot">.</span></div></div>
+    <div class="btns"><button class="btn" id="pressReplay">REPLAY</button></div>
+  </section>
+
+  <section class="sect" id="s4">
+    <p class="label">04 — SCROLL-LIT WORDS</p>
+    <p class="how">Every word is a span at 16% opacity. A scroll listener maps how far the
+    block has travelled through the viewport to a word index; words at or below the index
+    get lit. Key words are flagged to turn terracotta italic. Scroll up and down over this.</p>
+    <div class="stage"><p class="lit-text" id="litText">
+      Anyone can get AI to a demo now. The distance between a demo and a system a business
+      runs on, that's the work. This sentence lights up as you scroll, one word at a time,
+      and dims when you scroll back.
+    </p></div>
+  </section>
+
+  <section class="sect" id="s5" style="padding-bottom:0;">
+    <p class="label">05 — PINNED NUMERAL FILL</p>
+    <p class="how">The outer section is 260vh tall; the inner panel is position:sticky so it
+    stays put while you scroll "through" it. Scroll progress drives a clip-path that fills
+    the numeral with terracotta from below, and swaps 01 → 02 → 03. On mobile this
+    collapses to normal flow, because pinning is a desktop pleasure.</p>
+    <div class="pin-outer" id="pinOuter">
+      <div class="pin-sticky">
+        <div class="pin-grid">
+          <div class="pin-numeral" id="pinNumeral">01<span class="fill" id="pinFill">01</span></div>
+          <div class="pin-copy" id="pinCopy"><b>Scroll to fill</b>The numeral fills as you scroll through this section's height. Keep going to flip to the next stage.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sect" id="s6">
+    <p class="label">06 — VELOCITY MARQUEE</p>
+    <p class="how">A duplicated strip translated left every frame, wrapping at half its
+    width. Its speed adds your scroll velocity, so it surges when you scroll fast. Flick
+    the page and watch it react.</p>
+    <div class="mq"><div class="mq-track" id="mqTrack"></div></div>
+  </section>
+
+  <section class="sect" id="s7">
+    <p class="label">07 — COUNT-UP STATS</p>
+    <p class="how">An IntersectionObserver fires when the block enters the viewport; numbers
+    ease to their targets with a quartic curve, so they sprint then land softly.
+    Tabular numerals stop the layout jittering while digits change.</p>
+    <div class="cnt-grid" id="cntGrid">
+      <div class="cnt"><div class="n"><span class="count" data-target="96">0</span>%</div><div class="l">HYBRID RETRIEVAL BENCHMARK</div></div>
+      <div class="cnt"><div class="n"><span class="count" data-target="21">0</span></div><div class="l">JOB POSTINGS LOGGED</div></div>
+      <div class="cnt"><div class="n">2<em>×</em></div><div class="l">EVERY CHANGE REVIEWED</div></div>
+    </div>
+    <div class="btns"><button class="btn" id="cntReplay">REPLAY COUNT</button></div>
+  </section>
+
+  <section class="sect" id="s8">
+    <p class="label">08 — REVEALS + ATMOSPHERE</p>
+    <p class="how">Everything you've scrolled past used these: elements carry a marker class,
+    an IntersectionObserver adds the revealed state with staggered delays. And the paper
+    texture over this whole page is a single inline SVG turbulence filter, fixed and
+    multiplied at 35% opacity. No image files.</p>
+    <div class="rv-demo">
+      <div class="rv-card rv"><b>Card one</b>Slides up first.</div>
+      <div class="rv-card rv" style="transition-delay:.12s"><b>Card two</b>Then this one.</div>
+      <div class="rv-card rv" style="transition-delay:.24s"><b>Card three</b>Then this.</div>
+    </div>
+  </section>
+
+  <section class="sect" id="s9">
+    <p class="label">09 — INK FLOW FIELD</p>
+    <p class="how">Two thousand particles drifting through an invisible vector field made of
+    layered sine waves. Nothing is ever erased: each frame paints a whisper of paper over
+    the last, so the trails bleed like wet ink. The field itself slowly rotates, so the
+    currents never repeat.</p>
+    <div class="stage" id="flowStage"><canvas id="flowCanvas"></canvas></div>
+  </section>
+
+  <section class="sect" id="s10">
+    <p class="label">10 — HALFTONE PORTRAIT + LOUPE</p>
+    <p class="how">A photograph, resampled live into print dots: the canvas reads the
+    image's pixels and sizes each ink dot by luminance, like a letterpress halftone plate.
+    Your cursor is a loupe that reveals the real photograph through the dots. The ASCII
+    button re-renders the same luminance map as type instead of dots.</p>
+    <div class="stage" id="portStage"><canvas id="portCanvas"></canvas></div>
+    <div class="btns"><button class="btn" id="portHalf">HALFTONE</button>
+    <button class="btn" id="portAscii">ASCII</button></div>
+  </section>
+
+  <section class="sect" id="s11">
+    <p class="label">11 — THE FLEET</p>
+    <p class="how">The brand metaphor, drawn literally: agents orbiting an engineer.
+    Each dot runs its own elliptical orbit with its own speed; every couple of seconds one
+    dispatches to the centre, flashes terracotta, and returns to work. Trails are the
+    same never-erase ink technique as the flow field.</p>
+    <div class="stage" id="fleetStage"><canvas id="fleetCanvas"></canvas></div>
+  </section>
+
+  <section class="sect" id="s12">
+    <p class="label">12 — BREATHING TYPE</p>
+    <p class="how">Fraunces is a variable font with hidden axes: weight, softness, and
+    "wonk". Each letter is a span whose axes oscillate on its own phase, so the word
+    breathes. Bring your cursor close and letters go full wonk, bold and bent, springing
+    back as you leave. No canvas at all, just font-variation-settings at 60fps.</p>
+    <div class="stage" id="breatheStage"><div id="breatheText"></div></div>
+  </section>
+
+  <section class="sect" id="s13">
+    <p class="label">13 — LIQUID INK</p>
+    <p class="how">Metaballs with no WebGL: soft radial blobs are drawn blurred onto a tiny
+    offscreen canvas, then a contrast filter crushes the blur into a hard edge. Where blobs
+    approach, their fields merge and the ink goes gooey. Your cursor is one of the blobs.</p>
+    <div class="stage" id="gooStage"><canvas id="gooCanvas"></canvas></div>
+  </section>
+
+  <section class="sect" id="s14">
+    <p class="label">14 — THE PLUCKED RULE</p>
+    <p class="how">One of the ledger rules from the page background, made physical: a rope
+    of forty points simulated with verlet integration, three constraint passes per frame.
+    Drag your cursor through it and let it twang.</p>
+    <div class="stage" id="ropeStage"><canvas id="ropeCanvas"></canvas></div>
+  </section>
+
+</main>
+
+<footer class="wrap foot">
+  <span>BUILT WITH THE FLEET — NO LIBRARIES WERE HARMED</span>
+  <span><a href="https://austinmander.com">AUSTINMANDER.COM</a> · <a href="https://mander.ai">MANDER.AI</a></span>
+</footer>
+
+<script>
+(() => {
+"use strict";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+const lerp = (a,b,t) => a + (b-a)*t;
+
+/* ---------- particle engine (shared) ---------- */
+function makeParticles(canvasId, stageId, opts) {
+  const canvas = document.getElementById(canvasId);
+  const stage = document.getElementById(stageId);
+  const ctx = canvas.getContext("2d");
+  const st = { parts:[], dpr:1, cw:0, ch:0, born:performance.now(), disp:0, dispTarget:0,
+               pointer:{x:-9999,y:-9999} };
+  stage.addEventListener("pointermove", e => {
+    const r = canvas.getBoundingClientRect();
+    st.pointer.x = (e.clientX - r.left) * st.dpr;
+    st.pointer.y = (e.clientY - r.top) * st.dpr;
+  });
+  stage.addEventListener("pointerleave", () => { st.pointer.x = st.pointer.y = -9999; });
+
+  st.build = () => {
+    const r = stage.getBoundingClientRect();
+    st.dpr = Math.min(devicePixelRatio || 1, 1.75);
+    st.cw = Math.max(1, Math.round(r.width * st.dpr));
+    st.ch = Math.max(1, Math.round(r.height * st.dpr));
+    canvas.width = st.cw; canvas.height = st.ch;
+    const off = document.createElement("canvas");
+    off.width = st.cw; off.height = st.ch;
+    const g = off.getContext("2d");
+    let size = st.ch * opts.scale;
+    g.font = `${opts.weight} ${size}px "${opts.font}"`;
+    const tw = g.measureText(opts.text).width;
+    const maxW = st.cw * 0.92;
+    if (tw > maxW) { size *= maxW / tw; g.font = `${opts.weight} ${size}px "${opts.font}"`; }
+    g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
+    g.fillText(opts.text, st.cw/2, st.ch/2 + size*0.03);
+    const dotX = opts.dotWord ? (st.cw/2 - g.measureText(opts.text).width/2 + g.measureText(opts.dotWord).width) : Infinity;
+    const data = g.getImageData(0,0,st.cw,st.ch).data;
+    const small = st.cw < 1100;
+    const gap = Math.max(2, Math.round((small ? 2.1 : 2.6) * st.dpr));
+    const pts = [];
+    for (let y=0; y<st.ch; y+=gap) for (let x=0; x<st.cw; x+=gap)
+      if (data[(y*st.cw+x)*4+3] > 128) pts.push([x,y]);
+    const MAX = 2600;
+    while (pts.length > MAX) pts.splice((Math.random()*pts.length)|0, 1);
+    st.parts = pts.map(([x,y]) => {
+      const a = Math.random()*Math.PI*2;
+      const d = (0.55 + Math.random()*0.85) * Math.max(st.cw, st.ch)*0.5;
+      const isDot = x > dotX*1.001;
+      return { tx:x, ty:y, x:st.cw/2 + Math.cos(a)*d, y:st.ch/2 + Math.sin(a)*d,
+        da:Math.random()*Math.PI*2, dm:0.6+Math.random()*1.1, delay:Math.random()*0.55,
+        sz:(0.9+Math.random()*1.5)*(isDot?1.7:1)*(small?1.3:1)*st.dpr,
+        heat:Math.random(), isDot, fl:Math.random()*Math.PI*2 };
+    });
+    st.born = performance.now();
+  };
+
+  st.draw = (now) => {
+    const { cw, ch } = st;
+    ctx.clearRect(0,0,cw,ch);
+    if (opts.additive) ctx.globalCompositeOperation = "lighter";
+    st.disp = lerp(st.disp, st.dispTarget, 0.06);
+    if (st.dispTarget > 0.95 && st.disp > 0.9) st.dispTarget = 0; // auto-return
+    const life = (now - st.born)/1000;
+    const dE = st.disp*st.disp*(3-2*st.disp);
+    for (const p of st.parts) {
+      const t = clamp((life - p.delay)/1.1, 0, 1);
+      const e = 1 - Math.pow(1-t, 3);
+      let x = lerp(p.x, p.tx, e), y = lerp(p.y, p.ty, e);
+      if (dE > 0.01) {
+        const m = dE * p.dm;
+        x += Math.cos(p.da)*m*cw*0.35;
+        y += Math.sin(p.da)*m*ch*0.9 - m*ch*0.4;
+      } else if (t >= 1) {
+        const dx = x-st.pointer.x, dy = y-st.pointer.y, R = 80*st.dpr;
+        const dd = dx*dx+dy*dy;
+        if (dd < R*R) { const dist = Math.sqrt(dd)||1, f = (1-dist/R)*24*st.dpr;
+          x += dx/dist*f; y += dy/dist*f; }
+        x += Math.sin(now*0.0013+p.fl)*0.6*st.dpr;
+        y += Math.cos(now*0.0011+p.fl*1.7)*0.6*st.dpr;
+      }
+      const flick = opts.additive ? (0.84+0.16*Math.sin(now*0.006+p.fl)) : (0.88+0.12*Math.sin(now*0.006+p.fl));
+      const alpha = clamp(e*(1-dE)*flick, 0, 1);
+      if (alpha <= 0.01) continue;
+      ctx.fillStyle = opts.color(p, alpha);
+      ctx.fillRect(x, y, p.sz, p.sz);
+    }
+    if (opts.additive) ctx.globalCompositeOperation = "source-over";
+  };
+  st.build();
+  return st;
+}
+
+const ink = makeParticles("inkCanvas", "inkStage", {
+  text:"Mander.", dotWord:"Mander", font:"Fraunces", weight:600, scale:0.62, additive:false,
+  color:(p,a) => p.isDot ? `rgba(193,79,29,${a})`
+    : p.heat > 0.92 ? `rgba(193,79,29,${a*0.85})`
+    : p.heat > 0.72 ? `rgba(74,70,64,${a*0.95})`
+    : `rgba(25,23,20,${a*0.97})`
+});
+const hot = makeParticles("hotCanvas", "hotStage", {
+  text:"MANDER", font:"Big Shoulders", weight:800, scale:0.72, additive:true,
+  color:(p,a) => p.heat > 0.92 ? `rgba(255,243,228,${a})`
+    : p.heat > 0.55 ? `rgba(255,179,71,${a*0.9})`
+    : `rgba(255,77,28,${a*0.85})`
+});
+document.getElementById("inkReplay").onclick = () => { ink.build(); };
+document.getElementById("hotReplay").onclick = () => { hot.build(); };
+document.getElementById("inkBlast").onclick = () => { ink.dispTarget = 1; };
+document.getElementById("hotBlast").onclick = () => { hot.dispTarget = 1; };
+
+/* ---------- letterpress ---------- */
+function press() {
+  const el = document.getElementById("pressName");
+  const dotHTML = '<span class="dot">.</span>';
+  const words = ["Austin","Mander"];
+  el.innerHTML = "";
+  let i = 0;
+  words.forEach((w, wi) => {
+    [...w].forEach(ch => {
+      const s = document.createElement("span");
+      s.className = "L"; s.textContent = ch;
+      s.style.animationDelay = `${.1 + (i++)*.045}s`;
+      el.appendChild(s);
+    });
+    if (wi === 0) el.appendChild(document.createTextNode(" "));
+  });
+  const d = document.createElement("span");
+  d.className = "dot"; d.textContent = ".";
+  d.style.animationDelay = `${.1 + i*.045 + .1}s`;
+  el.appendChild(d);
+}
+document.getElementById("pressReplay").onclick = press;
+if (!reduced) press();
+
+/* ---------- scroll-lit words ---------- */
+const lit = document.getElementById("litText");
+const hotWords = new Set(["distance","work.","lights"]);
+lit.innerHTML = lit.textContent.trim().split(/\s+/)
+  .map(w => `<span class="w${hotWords.has(w.toLowerCase()) ? " hot" : ""}">${w}</span>`).join(" ");
+const litWords = [...lit.querySelectorAll(".w")];
+
+/* ---------- marquee ---------- */
+const track = document.getElementById("mqTrack");
+const chunk = "PARTICLES <em>◆</em> LETTERPRESS <em>◆</em> SCROLL-LIT <em>◆</em> PINNED <em>◆</em> VELOCITY <em>◆</em> ";
+track.innerHTML = `<span class="mq-chunk">${chunk.repeat(4)}</span><span class="mq-chunk">${chunk.repeat(4)}</span>`;
+let mx = 0, halfW = 0, lastY = scrollY, vel = 0;
+const measure = () => { halfW = track.scrollWidth/2; };
+measure();
+
+/* ---------- counters ---------- */
+function runCounters() {
+  document.querySelectorAll("#cntGrid .count").forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    if (reduced) { el.textContent = Math.round(target); return; }
+    const t0 = performance.now(), dur = 1400;
+    (function tick(now){
+      const t = clamp((now-t0)/dur, 0, 1);
+      el.textContent = Math.round(target*(1-Math.pow(1-t,4)));
+      if (t < 1) requestAnimationFrame(tick);
+    })(t0);
+  });
+}
+const cio = new IntersectionObserver(es => {
+  es.forEach(e => { if (e.isIntersecting) { runCounters(); cio.disconnect(); } });
+}, { threshold:.5 });
+cio.observe(document.getElementById("cntGrid"));
+document.getElementById("cntReplay").onclick = runCounters;
+
+/* ---------- reveals ---------- */
+const io = new IntersectionObserver(es => {
+  es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+}, { threshold:.2 });
+document.querySelectorAll(".rv").forEach(el => io.observe(el));
+
+/* ---------- pinned numeral ---------- */
+const pinOuter = document.getElementById("pinOuter");
+const pinNumeral = document.getElementById("pinNumeral");
+const pinFill = document.getElementById("pinFill");
+const labels = ["01","02","03"];
+let pinCur = 0;
+
+/* ---------- main loop ---------- */
+function frame(now) {
+  vel = lerp(vel, scrollY - lastY, 0.1); lastY = scrollY;
+  if (!reduced) {
+    if (halfW > 0) {
+      mx -= 0.5 + Math.min(Math.abs(vel)*0.25, 6);
+      if (mx <= -halfW) mx += halfW;
+      track.style.transform = `translateX(${mx}px)`;
+    }
+    const lr = lit.getBoundingClientRect();
+    const lp = clamp((innerHeight*0.85 - lr.top)/(lr.height + innerHeight*0.3), 0, 1);
+    const cut = Math.floor(lp * litWords.length * 1.15);
+    litWords.forEach((w,i) => w.classList.toggle("lit", i < cut));
+    if (innerWidth > 700) {
+      const pr = pinOuter.getBoundingClientRect();
+      const total = pinOuter.offsetHeight - innerHeight;
+      const pp = clamp(-pr.top/Math.max(total,1), 0, 1);
+      const sf = pp*3, s = clamp(Math.floor(sf), 0, 2), within = clamp(sf-s, 0, 1);
+      if (s !== pinCur) { pinCur = s;
+        pinNumeral.childNodes[0].nodeValue = labels[s]; pinFill.textContent = labels[s]; }
+      pinFill.style.clipPath = `inset(${(1-within)*100}% 0 0 0)`;
+    }
+  }
+  ink.draw(now); hot.draw(now);
+  requestAnimationFrame(frame);
+}
+
+let rsT;
+addEventListener("resize", () => { clearTimeout(rsT);
+  rsT = setTimeout(() => { ink.build(); hot.build(); measure(); }, 180); });
+addEventListener("scroll", () => {}, { passive:true });
+
+if (document.fonts && document.fonts.ready) {
+  Promise.race([
+    Promise.all([document.fonts.load('600 100px "Fraunces"'), document.fonts.load('800 100px "Big Shoulders"')]).then(() => document.fonts.ready),
+    new Promise(res => setTimeout(res, 1500))
+  ]).then(() => { ink.build(); hot.build(); requestAnimationFrame(frame); });
+} else { requestAnimationFrame(frame); }
+})();
+</script>
+
+<script>
+/* ============ BATCH 2 — the wow shelf ============ */
+(() => {
+"use strict";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+
+/* per-stage visibility gating: offscreen effects don't burn frames */
+const vis = {};
+function gate(id) {
+  vis[id] = false;
+  new IntersectionObserver(es => es.forEach(e => vis[id] = e.isIntersecting), { threshold: 0.05 })
+    .observe(document.getElementById(id));
+}
+function fitCanvas(canvas, stage) {
+  const r = stage.getBoundingClientRect();
+  const dpr = Math.min(devicePixelRatio || 1, 1.75);
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  return dpr;
+}
+function trackPointer(stage, canvas, P) {
+  stage.addEventListener("pointermove", e => {
+    const r = canvas.getBoundingClientRect();
+    P.x = (e.clientX - r.left) * P.dpr; P.y = (e.clientY - r.top) * P.dpr; P.on = true;
+  });
+  stage.addEventListener("pointerleave", () => { P.on = false; P.x = P.y = -9999; });
+}
+
+/* ---------- 09 flow field ---------- */
+const flowStage = document.getElementById("flowStage");
+const flowC = document.getElementById("flowCanvas");
+const fx = flowC.getContext("2d");
+let fDpr = 1, fParts = [];
+function flowInit() {
+  fDpr = fitCanvas(flowC, flowStage);
+  fx.fillStyle = "#f2eee5"; fx.fillRect(0,0,flowC.width,flowC.height);
+  fParts = Array.from({length: 2000}, () => ({
+    x: Math.random()*flowC.width, y: Math.random()*flowC.height,
+    hot: Math.random() > 0.9, life: Math.random()*300|0
+  }));
+}
+function flowDraw(t) {
+  fx.fillStyle = "rgba(242,238,229,0.045)"; fx.fillRect(0,0,flowC.width,flowC.height);
+  const k = 0.004 / fDpr, tt = t*0.00012;
+  for (const p of fParts) {
+    const a = Math.sin(p.x*k + tt*2) + Math.cos(p.y*k*1.3 - tt) + Math.sin((p.x+p.y)*k*0.5 + tt*0.7);
+    const ang = a * Math.PI;
+    p.x += Math.cos(ang) * 1.2 * fDpr; p.y += Math.sin(ang) * 1.2 * fDpr;
+    if (--p.life < 0 || p.x < 0 || p.x > flowC.width || p.y < 0 || p.y > flowC.height) {
+      p.x = Math.random()*flowC.width; p.y = Math.random()*flowC.height; p.life = 200 + Math.random()*200;
+    }
+    fx.fillStyle = p.hot ? "rgba(193,79,29,0.5)" : "rgba(25,23,20,0.35)";
+    fx.fillRect(p.x, p.y, 1.1*fDpr, 1.1*fDpr);
+  }
+}
+
+/* ---------- 10 halftone portrait ---------- */
+const portStage = document.getElementById("portStage");
+const portC = document.getElementById("portCanvas");
+const px = portC.getContext("2d");
+const portImg = new Image(); portImg.src = "__PORTRAIT__";
+let pDpr = 1, pGrid = null, pMode = "half";
+const pPtr = { x:-9999, y:-9999, on:false, dpr:1 };
+const ASCII = " .:-=+*#%@";
+function portInit() {
+  pDpr = fitCanvas(portC, portStage); pPtr.dpr = pDpr;
+  if (!portImg.complete || !portImg.naturalWidth) return;
+  const W = portC.width, H = portC.height;
+  const cell = Math.round(7 * pDpr);
+  const iw = portImg.naturalWidth, ih = portImg.naturalHeight;
+  const scale = Math.max(W/iw, H/ih) * 0.98;
+  const dw = iw*scale, dh = ih*scale, oxx = (W-dw)/2, oyy = (H-dh)/2;
+  const off = document.createElement("canvas"); off.width = W; off.height = H;
+  const og = off.getContext("2d");
+  og.fillStyle = "#fff"; og.fillRect(0,0,W,H);
+  og.drawImage(portImg, oxx, oyy, dw, dh);
+  const data = og.getImageData(0,0,W,H).data;
+  pGrid = { cell, cols: Math.ceil(W/cell), rows: Math.ceil(H/cell), lum: [], img: off };
+  for (let r=0; r<pGrid.rows; r++) for (let c=0; c<pGrid.cols; c++) {
+    const sx = Math.min(W-1, c*cell + (cell>>1)), sy = Math.min(H-1, r*cell + (cell>>1));
+    const i = (sy*W + sx)*4;
+    pGrid.lum.push(1 - (0.2126*data[i] + 0.7152*data[i+1] + 0.0722*data[i+2])/255);
+  }
+}
+function portDraw() {
+  if (!pGrid) { portInit(); return; }
+  const { cell, cols, rows, lum } = pGrid;
+  px.fillStyle = "#f7f4ed"; px.fillRect(0,0,portC.width,portC.height);
+  px.fillStyle = "#191714";
+  if (pMode === "ascii") { px.font = `${cell*1.05}px "IBM Plex Mono"`; px.textBaseline = "top"; }
+  for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) {
+    const L = lum[r*cols+c];
+    if (L < 0.06) continue;
+    const x = c*cell, y = r*cell;
+    if (pMode === "half") {
+      const rad = L * cell * 0.62;
+      px.beginPath(); px.arc(x+cell/2, y+cell/2, rad, 0, 6.2832); px.fill();
+    } else {
+      px.fillText(ASCII[Math.min(ASCII.length-1, Math.round(L*(ASCII.length-1)))], x, y);
+    }
+  }
+  if (pPtr.on) {
+    const R = 85 * pDpr;
+    px.save();
+    px.beginPath(); px.arc(pPtr.x, pPtr.y, R, 0, 6.2832); px.clip();
+    px.drawImage(pGrid.img, 0, 0);
+    px.restore();
+    px.strokeStyle = "#c14f1d"; px.lineWidth = 2*pDpr;
+    px.beginPath(); px.arc(pPtr.x, pPtr.y, R, 0, 6.2832); px.stroke();
+  }
+}
+trackPointer(portStage, portC, pPtr);
+document.getElementById("portHalf").onclick = () => { pMode = "half"; };
+document.getElementById("portAscii").onclick = () => { pMode = "ascii"; };
+portImg.onload = portInit;
+
+/* ---------- 11 the fleet ---------- */
+const fleetStage = document.getElementById("fleetStage");
+const fleetC = document.getElementById("fleetCanvas");
+const flx = fleetC.getContext("2d");
+let flDpr = 1, agents = [], dispatchT = 0;
+function fleetInit() {
+  flDpr = fitCanvas(fleetC, fleetStage);
+  flx.fillStyle = "#f2eee5"; flx.fillRect(0,0,fleetC.width,fleetC.height);
+  agents = Array.from({length: 14}, (_,i) => ({
+    a: Math.random()*6.2832, sp: (0.12 + Math.random()*0.5) * (Math.random()>0.5?1:-1) * 0.008,
+    rx: (0.14 + Math.random()*0.36) * fleetC.width * 0.5,
+    ry: (0.25 + Math.random()*0.6) * fleetC.height * 0.42,
+    dispatch: 0
+  }));
+}
+function fleetDraw(t) {
+  flx.fillStyle = "rgba(242,238,229,0.08)"; flx.fillRect(0,0,fleetC.width,fleetC.height);
+  const cx = fleetC.width/2, cy = fleetC.height/2;
+  if (t - dispatchT > 1800) { dispatchT = t;
+    const ag = agents[(Math.random()*agents.length)|0]; ag.dispatch = 1; }
+  flx.fillStyle = "#191714";
+  flx.fillRect(cx-5*flDpr, cy-5*flDpr, 10*flDpr, 10*flDpr);
+  flx.fillStyle = "#c14f1d";
+  flx.beginPath(); flx.arc(cx+7*flDpr, cy+7*flDpr, 2.6*flDpr, 0, 6.2832); flx.fill();
+  for (const ag of agents) {
+    ag.a += ag.sp * 16;
+    const x = cx + Math.cos(ag.a)*ag.rx, y = cy + Math.sin(ag.a)*ag.ry;
+    if (ag.dispatch > 0) {
+      flx.strokeStyle = `rgba(193,79,29,${ag.dispatch*0.6})`;
+      flx.lineWidth = 1.2*flDpr;
+      flx.beginPath(); flx.moveTo(x,y); flx.lineTo(cx,cy); flx.stroke();
+      ag.dispatch -= 0.02;
+    }
+    flx.fillStyle = ag.dispatch > 0 ? "#c14f1d" : "rgba(25,23,20,0.85)";
+    flx.beginPath(); flx.arc(x, y, (ag.dispatch>0?3.2:2.2)*flDpr, 0, 6.2832); flx.fill();
+  }
+}
+
+/* ---------- 12 breathing type ---------- */
+const bText = document.getElementById("breatheText");
+const bStage = document.getElementById("breatheStage");
+{
+  const phrase = "applied AI";
+  bText.innerHTML = "";
+  [...phrase].forEach(ch => {
+    if (ch === " ") { const s = document.createElement("span"); s.className="sp"; bText.appendChild(s); return; }
+    const s = document.createElement("span"); s.className = "B"; s.textContent = ch;
+    bText.appendChild(s);
+  });
+}
+const bLetters = [...bText.querySelectorAll(".B")];
+const bPtr = { x:-9999, y:-9999, on:false, dpr:1 };
+bStage.addEventListener("pointermove", e => { bPtr.x = e.clientX; bPtr.y = e.clientY; bPtr.on = true; });
+bStage.addEventListener("pointerleave", () => { bPtr.on = false; });
+function breatheDraw(t) {
+  bLetters.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const d = bPtr.on ? Math.hypot(bPtr.x - (r.left+r.width/2), bPtr.y - (r.top+r.height/2)) : 1e9;
+    const near = clamp(1 - d/140, 0, 1);
+    const wave = Math.sin(t*0.0016 + i*0.55);
+    const wght = 340 + wave*120 + near*440;
+    const soft = 30 + wave*30 + near*70;
+    const wonk = near > 0.35 ? 1 : 0;
+    el.style.fontVariationSettings = `"SOFT" ${soft.toFixed(0)}, "WONK" ${wonk}`;
+    el.style.fontWeight = wght.toFixed(0);
+    el.style.color = near > 0.55 ? "var(--accent)" : "var(--text)";
+  });
+}
+
+/* ---------- 13 liquid ink (metaballs) ---------- */
+const gooStage = document.getElementById("gooStage");
+const gooC = document.getElementById("gooCanvas");
+const gx = gooC.getContext("2d");
+let gDpr = 1, gOff = null, gg = null, blobs = [];
+const gPtr = { x:-9999, y:-9999, on:false, dpr:1 };
+function gooInit() {
+  gDpr = fitCanvas(gooC, gooStage); gPtr.dpr = gDpr;
+  gOff = document.createElement("canvas");
+  gOff.width = Math.round(gooC.width/3); gOff.height = Math.round(gooC.height/3);
+  gg = gOff.getContext("2d");
+  blobs = Array.from({length: 7}, () => ({
+    px: Math.random(), py: Math.random(), r: 0.05 + Math.random()*0.055,
+    sx: 0.3 + Math.random()*0.7, sy: 0.3 + Math.random()*0.7, ph: Math.random()*6.28
+  }));
+}
+function gooDraw(t) {
+  const W = gOff.width, H = gOff.height;
+  gg.clearRect(0,0,W,H);
+  const draw = (x, y, r) => {
+    const grd = gg.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0, "rgba(0,0,0,1)"); grd.addColorStop(1, "rgba(0,0,0,0)");
+    gg.fillStyle = grd; gg.beginPath(); gg.arc(x,y,r,0,6.2832); gg.fill();
+  };
+  blobs.forEach(b => {
+    const x = (0.5 + 0.40*Math.sin(t*0.0004*b.sx + b.ph)) * W;
+    const y = (0.5 + 0.38*Math.cos(t*0.0005*b.sy + b.ph*1.7)) * H;
+    draw(x, y, b.r * W);
+  });
+  if (gPtr.on) draw(gPtr.x/3, gPtr.y/3, 0.085*W);
+  // metaball threshold: alpha field -> hard-edged ink (terracotta core, ink rim)
+  const id = gg.getImageData(0,0,W,H), d = id.data;
+  for (let i=0; i<d.length; i+=4) {
+    const a = d[i+3];
+    if (a > 120) { d[i]=193; d[i+1]=79; d[i+2]=29; d[i+3]=255; }
+    else if (a > 96) { d[i]=25; d[i+1]=23; d[i+2]=20; d[i+3]=255; }
+    else d[i+3] = 0;
+  }
+  gg.putImageData(id, 0, 0);
+  gx.clearRect(0,0,gooC.width,gooC.height);
+  gx.imageSmoothingEnabled = true;
+  gx.drawImage(gOff, 0, 0, gooC.width, gooC.height);
+}
+trackPointer(gooStage, gooC, gPtr);
+
+/* ---------- 14 the plucked rule ---------- */
+const ropeStage = document.getElementById("ropeStage");
+const ropeC = document.getElementById("ropeCanvas");
+const rx2 = ropeC.getContext("2d");
+let rDpr = 1, pts = [], prev = [];
+const rPtr = { x:-9999, y:-9999, on:false, dpr:1 };
+function ropeInit() {
+  rDpr = fitCanvas(ropeC, ropeStage); rPtr.dpr = rDpr;
+  const N = 42, y0 = ropeC.height/2;
+  pts = Array.from({length:N}, (_,i) => ({ x: (i/(N-1))*ropeC.width, y: y0 }));
+  prev = pts.map(p => ({...p}));
+}
+function ropeDraw() {
+  const N = pts.length, seg = ropeC.width/(N-1);
+  for (let i=1; i<N-1; i++) {
+    const p = pts[i], pr = prev[i];
+    const vx = (p.x - pr.x)*0.985, vy = (p.y - pr.y)*0.985;
+    pr.x = p.x; pr.y = p.y;
+    p.x += vx; p.y += vy + 0.15*rDpr;
+    if (rPtr.on) {
+      const dx = p.x - rPtr.x, dy = p.y - rPtr.y, dd = Math.hypot(dx,dy), R = 55*rDpr;
+      if (dd < R) { const f = (1 - dd/R) * 5 * rDpr; p.x += dx/dd*f; p.y += dy/dd*f; }
+    }
+  }
+  for (let k=0; k<3; k++) {
+    for (let i=0; i<N-1; i++) {
+      const a = pts[i], b = pts[i+1];
+      const dx = b.x-a.x, dy = b.y-a.y, d = Math.hypot(dx,dy) || 1;
+      const diff = (d - seg)/d * 0.5;
+      const ox = dx*diff, oy = dy*diff;
+      if (i > 0) { a.x += ox; a.y += oy; }
+      if (i < N-2) { b.x -= ox; b.y -= oy; }
+    }
+    pts[0].x = 0; pts[0].y = ropeC.height/2;
+    pts[N-1].x = ropeC.width; pts[N-1].y = ropeC.height/2;
+  }
+  rx2.clearRect(0,0,ropeC.width,ropeC.height);
+  rx2.strokeStyle = "#191714"; rx2.lineWidth = 1.6*rDpr;
+  rx2.beginPath(); rx2.moveTo(pts[0].x, pts[0].y);
+  for (let i=1; i<N-1; i++) {
+    const xc = (pts[i].x + pts[i+1].x)/2, yc = (pts[i].y + pts[i+1].y)/2;
+    rx2.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  rx2.stroke();
+  rx2.fillStyle = "#c14f1d";
+  rx2.beginPath(); rx2.arc(pts[0].x+3*rDpr, pts[0].y, 3*rDpr, 0, 6.2832); rx2.fill();
+  rx2.beginPath(); rx2.arc(pts[pts.length-1].x-3*rDpr, pts[pts.length-1].y, 3*rDpr, 0, 6.2832); rx2.fill();
+}
+trackPointer(ropeStage, ropeC, rPtr);
+
+/* ---------- init + loop ---------- */
+["flowStage","portStage","fleetStage","breatheStage","gooStage","ropeStage"].forEach(gate);
+flowInit(); fleetInit(); gooInit(); ropeInit();
+
+function loop(t) {
+  if (!reduced) {
+    if (vis.flowStage) flowDraw(t);
+    if (vis.portStage) portDraw();
+    if (vis.fleetStage) fleetDraw(t);
+    if (vis.breatheStage) breatheDraw(t);
+    if (vis.gooStage) gooDraw(t);
+    if (vis.ropeStage) ropeDraw();
+  }
+  requestAnimationFrame(loop);
+}
+if (reduced) { flowDraw(0); portDraw(); fleetDraw(0); gooDraw(0); ropeDraw(); }
+else requestAnimationFrame(loop);
+
+let rsT2;
+addEventListener("resize", () => { clearTimeout(rsT2);
+  rsT2 = setTimeout(() => { flowInit(); portInit(); fleetInit(); gooInit(); ropeInit(); }, 200); });
+})();
+</script>
