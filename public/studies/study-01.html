@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8e2d2">
+  <meta name="description" content="A typographic reveal driven by one virtual-scroll scalar.">
+  <title>01 Type as progress — Scroll Studies</title>
+  <style>:root {
+  color-scheme: light;
+  font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+  font-synthesis: none;
+  --paper: oklch(90% 0.025 85);
+  --paper-deep: oklch(84% 0.04 82);
+  --ink: oklch(19% 0.028 70);
+  --ink-soft: oklch(35% 0.035 70);
+  --signal: oklch(83% 0.205 125);
+  --rust: oklch(51% 0.19 31);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  min-width: 20rem;
+  touch-action: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a { color: inherit; }
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--ink);
+  color: var(--paper);
+  transform: translateY(-150%);
+  transition: transform 180ms var(--ease-out);
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+.masthead {
+  position: fixed;
+  z-index: 30;
+  top: max(1rem, env(safe-area-inset-top));
+  left: max(1rem, env(safe-area-inset-left));
+  right: max(3.2rem, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: oklch(94% 0.02 85);
+}
+
+.wordmark {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+
+.wordmark-mark {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: "Iowan Old Style", "Baskerville", serif;
+  font-size: 0.85rem;
+}
+
+.masthead-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.signal-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.stage,
+.scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.stage { isolation: isolate; }
+
+.scene {
+  visibility: hidden;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms linear, visibility 0s 180ms;
+  contain: strict;
+}
+
+.scene.is-active {
+  z-index: 2;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 320ms var(--ease-out), visibility 0s;
+}
+
+.scene-index {
+  margin: 0;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.scene-type {
+  --reveal: 100%;
+  background: var(--paper);
+}
+
+.scene-type::before {
+  content: "";
+  position: absolute;
+  top: 16%;
+  left: 39%;
+  width: min(18vw, 13rem);
+  aspect-ratio: 1;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  transform: translate3d(0, calc(var(--type-shift, 0) * 1px), 0);
+}
+
+.scene-type > .scene-index {
+  position: absolute;
+  top: 16%;
+  left: 5vw;
+}
+
+.type-lockup {
+  position: absolute;
+  top: 26%;
+  left: 4.6vw;
+  right: 4.5rem;
+}
+
+.type-lockup h1 {
+  margin: 0;
+  font-family: "Bodoni 72", "Didot", "Iowan Old Style", serif;
+  font-size: clamp(4.5rem, 11.6vw, 12rem);
+  font-weight: 400;
+  letter-spacing: -0.075em;
+  line-height: 0.72;
+}
+
+.type-ghost {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--ink-soft);
+  opacity: 0.42;
+}
+
+.type-fill {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(var(--reveal) 0 0 0);
+  color: var(--ink);
+}
+
+.type-aside {
+  position: absolute;
+  right: 9vw;
+  top: 18%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  font-family: "Iowan Old Style", "Baskerville", serif;
+  font-size: clamp(0.8rem, 1.25vw, 1.1rem);
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.type-aside p { margin: 0; }
+.type-rule { width: 2.8rem; height: 1px; margin-top: 0.65em; background: currentColor; }
+
+.type-footnote {
+  position: absolute;
+  bottom: max(4rem, calc(2rem + env(safe-area-inset-bottom)));
+  left: 5vw;
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.scene-canvas {
+  background: oklch(18% 0.035 65);
+  color: oklch(91% 0.025 86);
+}
+
+#particle-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.canvas-copy {
+  position: absolute;
+  top: 15%;
+  left: 5vw;
+  mix-blend-mode: difference;
+}
+
+.canvas-copy h2 {
+  margin: 11vh 0 0;
+  font-family: "Bodoni 72", "Didot", "Iowan Old Style", serif;
+  font-size: clamp(4.2rem, 10vw, 10.5rem);
+  font-weight: 400;
+  letter-spacing: -0.07em;
+  line-height: 0.78;
+}
+
+.canvas-meter {
+  position: absolute;
+  top: 16%;
+  right: 9vw;
+  display: flex;
+  min-width: 8rem;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid currentColor;
+  padding-top: 0.5rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.canvas-meter strong { font-size: 1.3rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+
+.lifecycle-proof {
+  position: absolute;
+  right: 9vw;
+  bottom: 8vh;
+  display: grid;
+  min-width: 13rem;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  border-top: 1px solid currentColor;
+  padding-top: 0.6rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lifecycle-proof strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.lifecycle-proof > :last-child { grid-column: 1 / -1; color: var(--signal); }
+
+.scene-gallery { background: oklch(87% 0.055 71); }
+
+.gallery-heading {
+  position: absolute;
+  z-index: 3;
+  top: 14%;
+  left: 5vw;
+}
+
+.gallery-heading h2 {
+  margin: 1.2rem 0 0;
+  font-family: "Bodoni 72", "Didot", "Iowan Old Style", serif;
+  font-size: clamp(2.8rem, 5.8vw, 6.2rem);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 0.82;
+}
+
+.gallery-track {
+  position: absolute;
+  left: 5vw;
+  bottom: 8vh;
+  display: flex;
+  width: max-content;
+  gap: 2.4vw;
+  will-change: transform;
+}
+
+.gallery-panel {
+  position: relative;
+  width: 72vw;
+  height: 58vh;
+  flex: 0 0 auto;
+  overflow: hidden;
+  padding: 2rem;
+  border: 1px solid var(--ink);
+}
+
+.gallery-panel > span { font-size: 0.65rem; letter-spacing: 0.16em; }
+.gallery-panel h3 {
+  position: absolute;
+  left: 2rem;
+  bottom: 2.5rem;
+  margin: 0;
+  font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  font-size: clamp(4rem, 11vw, 10rem);
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  line-height: 0.7;
+  text-transform: uppercase;
+}
+
+.gallery-panel p {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  max-width: 10rem;
+  margin: 0;
+  font-family: "Iowan Old Style", "Baskerville", serif;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+.panel-one { background: oklch(65% 0.19 29); }
+.panel-two { background: oklch(42% 0.13 274); color: oklch(92% 0.03 80); }
+.panel-three { background: oklch(87% 0.15 97); }
+.panel-four { background: oklch(72% 0.13 176); }
+.panel-five { background: oklch(26% 0.04 67); color: oklch(91% 0.03 85); }
+
+.gallery-panel i { position: absolute; display: block; }
+.panel-orbit { top: 15%; left: 41%; width: 28%; aspect-ratio: 1; border: 1px solid; border-radius: 50%; box-shadow: 3rem 0 0 -1px currentColor; }
+.panel-bars { top: 21%; left: 34%; width: 27%; height: 32%; border-block: 2.2rem double; }
+.panel-disc { top: 10%; left: 45%; width: min(25vw, 16rem); aspect-ratio: 1; border-radius: 50%; background: var(--rust); }
+.panel-cross { top: 18%; left: 47%; width: 1px; height: 40%; background: currentColor; transform: rotate(28deg); box-shadow: 0 0 0 1px currentColor; }
+.panel-cross::after { content: ""; position: absolute; top: 50%; left: -8rem; width: 16rem; height: 1px; background: currentColor; }
+.panel-frame { top: 14%; left: 43%; width: 26%; height: 38%; border: 1px solid; transform: rotate(-7deg); }
+
+.scene-finale {
+  background: var(--rust);
+  color: oklch(93% 0.025 80);
+}
+
+.scene-finale > .scene-index { position: absolute; top: 15%; left: 5vw; }
+
+.finale-title {
+  position: absolute;
+  top: 22%;
+  left: 5vw;
+}
+
+.finale-title p { margin: 0 0 0.2rem; font-family: "Iowan Old Style", "Baskerville", serif; font-size: clamp(1.3rem, 2.4vw, 2.5rem); font-style: italic; }
+.finale-title h2 { margin: 0; font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif; font-size: clamp(5.5rem, 15vw, 14rem); line-height: 0.72; letter-spacing: -0.08em; text-transform: uppercase; }
+
+.counter-grid {
+  position: absolute;
+  right: 9vw;
+  top: 18%;
+  display: grid;
+  width: min(29vw, 24rem);
+  margin: 0;
+}
+
+.counter-grid div { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid currentColor; padding: 0.7rem 0 1.2rem; }
+.counter-grid dt { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; }
+.counter-grid dd { margin: 0; font-family: "Bodoni 72", "Didot", serif; font-size: clamp(2rem, 4vw, 4rem); font-variant-numeric: tabular-nums; }
+
+.marquee-window { position: absolute; left: 0; right: 0; bottom: 10vh; overflow: hidden; border-block: 1px solid currentColor; padding: 0.4rem 0 0.6rem; }
+.marquee-window p { width: max-content; margin: 0; font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif; font-size: clamp(2.8rem, 6.5vw, 6rem); font-weight: 800; letter-spacing: -0.05em; line-height: 0.85; white-space: nowrap; will-change: transform; }
+.finale-note { position: absolute; right: 9vw; bottom: 2.2vh; margin: 0; font-family: "Iowan Old Style", "Baskerville", serif; font-size: 0.78rem; font-style: italic; line-height: 1.3; }
+
+.debug-rail {
+  position: fixed;
+  z-index: 40;
+  top: 5rem;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(4.5rem, calc(3rem + env(safe-area-inset-bottom)));
+  width: 1.5rem;
+  mix-blend-mode: difference;
+  color: oklch(94% 0.02 85);
+  pointer-events: none;
+}
+
+.rail-meta {
+  position: absolute;
+  top: 50%;
+  left: -2.7rem;
+  display: flex;
+  width: 6.8rem;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  transform: rotate(90deg);
+}
+
+.rail-line { position: absolute; top: 1rem; bottom: 1rem; left: 50%; width: 1px; background: currentColor; }
+.rail-fill { position: absolute; inset: 0; background: var(--signal); transform: scaleY(0); transform-origin: top; }
+.rail-boundary { position: absolute; left: -0.2rem; width: 0.4rem; height: 0.4rem; border: 1px solid currentColor; border-radius: 50%; background: var(--ink); transform: translateY(-50%); }
+.boundary-one { top: 21.71%; }
+.boundary-two { top: 46.05%; }
+.boundary-three { top: 77.63%; }
+.rail-start, .rail-end { position: absolute; left: 0.58rem; font-size: 0.5rem; }
+.rail-start { top: 0; }
+.rail-end { bottom: 0; }
+
+.engine-status {
+  position: fixed;
+  z-index: 30;
+  right: max(3.2rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: max(1rem, env(safe-area-inset-left));
+  display: flex;
+  justify-content: space-between;
+  mix-blend-mode: difference;
+  color: oklch(94% 0.02 85);
+  pointer-events: none;
+  font-size: 0.58rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.engine-status p { display: flex; align-items: center; gap: 0.55rem; margin: 0; }
+.engine-status i { width: 2rem; height: 1px; background: currentColor; }
+
+noscript { position: fixed; z-index: 200; inset: 0; display: grid; place-items: center; padding: 2rem; background: var(--paper); }
+
+@media (max-width: 47.99rem) {
+  .masthead-mode { display: none; }
+  .type-lockup { top: 34%; right: 2.8rem; }
+  .type-lockup h1 { font-size: clamp(4.2rem, 20vw, 7rem); line-height: 0.78; }
+  .type-aside { top: 17%; right: 3.5rem; }
+  .scene-type::before { top: 17%; left: 5vw; width: 8rem; }
+  .canvas-copy h2 { margin-top: 18vh; font-size: clamp(4rem, 18vw, 7rem); }
+  .canvas-meter { right: 3.5rem; }
+  .lifecycle-proof { right: 3.5rem; bottom: 10vh; }
+  .gallery-heading h2 { font-size: 3.4rem; }
+  .gallery-panel { width: 84vw; height: 52vh; padding: 1.2rem; }
+  .gallery-panel h3 { left: 1.2rem; bottom: 2rem; font-size: 22vw; }
+  .gallery-panel p { top: 1.2rem; right: 1.2rem; }
+  .counter-grid { top: 51%; right: 3.5rem; left: 5vw; width: auto; }
+  .counter-grid div { padding-bottom: 0.4rem; }
+  .counter-grid dd { font-size: 2.2rem; }
+  .finale-title { top: 22%; }
+  .finale-title h2 { font-size: 24vw; }
+  .marquee-window { bottom: 8vh; }
+  .finale-note { display: none; }
+  .engine-status p:last-child { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .gallery-track,
+  .marquee-window p { will-change: auto; }
+}
+
+
+.study-help {
+  position: fixed; z-index: 90; top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right)); width: 2.75rem; height: 2.75rem;
+  padding: 0; border: 1px solid currentColor; border-radius: 50%; color: inherit;
+  background: transparent; font: 700 .72rem/1 "Avenir Next", "Helvetica Neue", sans-serif;
+  cursor: pointer; mix-blend-mode: difference;
+}
+.study-help:focus-visible, .study-back:focus-visible { outline: 2px solid var(--signal); outline-offset: 4px; }
+.study-annotation {
+  position: fixed; z-index: 80; left: 5vw; bottom: max(4.6rem, calc(3.4rem + env(safe-area-inset-bottom)));
+  width: min(25rem, calc(100vw - 6rem)); padding: 1rem 1.1rem 1.05rem;
+  border-top: 3px solid var(--signal); background: color-mix(in oklch, var(--ink) 94%, transparent);
+  color: var(--paper); box-shadow: 0 1rem 3rem color-mix(in oklch, var(--ink) 24%, transparent);
+  visibility: hidden; opacity: 0; transform: translate3d(0, .8rem, 0);
+  transition: opacity 180ms linear, transform 280ms var(--ease-out), visibility 0s 280ms;
+  pointer-events: none;
+}
+body.annotation-open .study-annotation {
+  visibility: visible; opacity: 1; transform: translate3d(0, 0, 0);
+  transition: opacity 180ms linear, transform 280ms var(--ease-out), visibility 0s;
+}
+.study-annotation p { margin: 0; font-size: .66rem; font-weight: 700; line-height: 1.65; letter-spacing: .1em; text-transform: uppercase; }
+.study-annotation p + p { border-top: 1px solid color-mix(in oklch, var(--paper) 25%, transparent); margin-top: .25rem; padding-top: .25rem; }
+.study-annotation strong { color: var(--signal); font-variant-numeric: tabular-nums; }
+.study-credit {
+  position: fixed; z-index: 30; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom));
+  margin: 0; color: oklch(94% .02 85); mix-blend-mode: difference; transform: translateX(-50%);
+  font-size: .52rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  white-space: nowrap; pointer-events: none;
+}
+.study-02 .study-annotation { background: color-mix(in oklch, #27231e 96%, transparent); color: #ece5d5; }
+.study-03 .study-annotation { background: color-mix(in oklch, #27231e 94%, transparent); color: #f0dfca; }
+.study-04 .study-annotation { background: color-mix(in oklch, #2a201e 94%, transparent); color: #f0dfca; }
+@media (max-width: 47.99rem) {
+  .study-annotation { left: 5vw; width: calc(100vw - 4.6rem); bottom: max(4.4rem, calc(3.2rem + env(safe-area-inset-bottom))); }
+  .study-credit { left: max(1rem, env(safe-area-inset-left)); bottom: max(2.65rem, calc(1.8rem + env(safe-area-inset-bottom))); transform: none; font-size: .45rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .study-annotation { transform: none !important; }
+}
+</style>
+</head>
+<body class="study-01">
+  <a class="skip-link" href="#scene-stage">Skip to motion study</a>
+  
+<header class="masthead" aria-label="Scroll Study">
+  <a class="wordmark study-back" href="/studies" aria-label="Back to Scroll Studies">
+    <span class="wordmark-mark" aria-hidden="true">M</span><span>mander—motion</span>
+  </a>
+  <p class="masthead-mode"><span class="signal-dot" aria-hidden="true"></span>virtual / locked</p>
+</header>
+<button class="study-help" type="button" aria-label="Toggle how it works" aria-controls="study-annotation" aria-expanded="false">?</button>
+  <main id="scene-stage" class="stage">
+  <section class="scene scene-type is-active" aria-label="Type as progress">
+    <p class="scene-index">Study 01 / Type as progress</p>
+    <div class="type-lockup" aria-label="Scroll is not a place">
+      <h1 class="type-ghost" aria-hidden="true">Scroll is<br>not a place.</h1>
+      <h1 class="type-fill">Scroll is<br>not a place.</h1>
+    </div>
+    <div class="type-aside"><span class="type-rule" aria-hidden="true"></span><p>It is one number,<br>moving through time.</p></div>
+    <p class="type-footnote">Wheel / drag / keys / space</p>
+  </section></main>
+  <aside id="study-annotation" class="study-annotation" aria-label="How it works" aria-hidden="true">
+    <p>One scalar drives a typographic clip.</p>
+    <p>Progress <strong id="annotation-progress">0.000</strong></p>
+    <p>Clip inset <strong id="annotation-clip">100.0%</strong></p>
+    <p>Velocity <strong id="annotation-velocity">+0000 px/s</strong></p></aside>
+  
+<aside class="debug-rail" aria-label="Timeline progress">
+  <div class="rail-meta"><span id="rail-segment">01</span><span id="rail-percent">000.0%</span></div>
+  <div class="rail-line"><span id="rail-fill" class="rail-fill"></span></div>
+  <span class="rail-start">0</span><span class="rail-end">1</span>
+</aside>
+  
+<div class="engine-status" aria-live="polite">
+  <p><span id="active-name">type-as-progress</span><i aria-hidden="true"></i><span id="active-progress">0.000</span></p>
+  <p><span id="velocity-value">+0000</span> px/s</p>
+</div>
+<footer class="study-credit">Built with mander-motion — 373 lines, no dependencies.</footer>
+  <noscript>This motion study needs JavaScript to run its virtual timeline.</noscript>
+  <script>const NOOP = () => {};
+const LISTENER_OPTIONS = { passive: false };
+const TOUCH_START_OPTIONS = { passive: true };
+
+function clamp(value, min, max) {
+  return value < min ? min : value > max ? max : value;
+}
+
+function isEditableTarget(target) {
+  if (!target) return false;
+  const tagName = target.tagName;
+  return target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
+}
+
+/**
+ * A small, effect-agnostic virtual scroll timeline.
+ *
+ * Segment callbacks receive no engine-owned objects in the frame loop:
+ *   enter(), exit(), scrub(progress), update(deltaSeconds, velocityPxPerSecond)
+ */
+class ManderMotion {
+  constructor(options = {}) {
+    this._win = options.window || window;
+    this._doc = options.document || document;
+    this._lerp = clamp(options.lerp ?? 0.095, 0.001, 1);
+    this._wheelMultiplier = options.wheelMultiplier ?? 1;
+    this._touchMultiplier = options.touchMultiplier ?? 1.35;
+    this._keyboardStep = options.keyboardStep ?? 0.82;
+    this._prewarm = Math.max(0, Math.floor(options.prewarm ?? 1));
+    this._onSegmentChange = options.onSegmentChange || NOOP;
+    this._lockNativeScroll = options.lockNativeScroll !== false;
+
+    this._segments = [];
+    this._activeIndex = -1;
+    this._currentScroll = 0;
+    this._targetScroll = 0;
+    this._totalLength = 0;
+    this._velocity = 0;
+    this._lastTime = 0;
+    this._touchY = 0;
+    this._touching = false;
+    this._rafId = 0;
+    this._running = false;
+    this._destroyed = false;
+
+    this._media = this._win.matchMedia('(prefers-reduced-motion: reduce)');
+    this._reducedMotion = options.reducedMotion ?? this._media.matches;
+
+    this._onWheel = this._handleWheel.bind(this);
+    this._onKeyDown = this._handleKeyDown.bind(this);
+    this._onTouchStart = this._handleTouchStart.bind(this);
+    this._onTouchMove = this._handleTouchMove.bind(this);
+    this._onTouchEnd = this._handleTouchEnd.bind(this);
+    this._onResize = this._handleResize.bind(this);
+    this._onMotionPreference = this._handleMotionPreference.bind(this);
+    this._tick = this._frame.bind(this);
+
+    this._savedRootOverflow = '';
+    this._savedRootOverscroll = '';
+    this._savedBodyOverflow = '';
+    this._savedBodyOverscroll = '';
+    this._bind();
+  }
+
+  get currentScroll() {
+    return this._currentScroll;
+  }
+
+  get targetScroll() {
+    return this._targetScroll;
+  }
+
+  get totalLength() {
+    return this._totalLength;
+  }
+
+  get velocity() {
+    return this._velocity;
+  }
+
+  get activeIndex() {
+    return this._activeIndex;
+  }
+
+  get activeSegment() {
+    return this._segments[this._activeIndex]?.source || null;
+  }
+
+  get progress() {
+    return this._totalLength > 0 ? this._currentScroll / this._totalLength : 0;
+  }
+
+  get reducedMotion() {
+    return this._reducedMotion;
+  }
+
+  /** Register one segment. Call before start(), or call refresh() after batching. */
+  register(segment) {
+    if (this._destroyed) throw new Error('Cannot register a segment on a destroyed ManderMotion instance.');
+    if (!segment || typeof segment.name !== 'string' || !(segment.lengthVh > 0)) {
+      throw new TypeError('A segment requires a name and a positive lengthVh.');
+    }
+
+    this._segments.push({
+      source: segment,
+      name: segment.name,
+      lengthVh: segment.lengthVh,
+      start: 0,
+      end: 0,
+      enter: typeof segment.enter === 'function' ? segment.enter : NOOP,
+      exit: typeof segment.exit === 'function' ? segment.exit : NOOP,
+      scrub: typeof segment.scrub === 'function' ? segment.scrub : NOOP,
+      update: typeof segment.update === 'function' ? segment.update : NOOP,
+    });
+
+    this.refresh(false);
+    return this;
+  }
+
+  /** Recalculate vh lengths without reading layout in the animation frame. */
+  refresh(preserveProgress = true) {
+    if (this._destroyed) return this;
+    const previousTotal = this._totalLength;
+    const currentRatio = previousTotal > 0 ? this._currentScroll / previousTotal : 0;
+    const targetRatio = previousTotal > 0 ? this._targetScroll / previousTotal : 0;
+    const viewportHeight = Math.max(1, this._win.innerHeight);
+    let cursor = 0;
+
+    for (let index = 0; index < this._segments.length; index += 1) {
+      const segment = this._segments[index];
+      segment.start = cursor;
+      cursor += segment.lengthVh * viewportHeight * 0.01;
+      segment.end = cursor;
+    }
+
+    this._totalLength = cursor;
+    this._targetScroll = preserveProgress && previousTotal > 0 ? targetRatio * cursor : clamp(this._targetScroll, 0, cursor);
+    this._currentScroll = preserveProgress && previousTotal > 0 ? currentRatio * cursor : clamp(this._currentScroll, 0, cursor);
+
+    if (this._segments.length > 0) {
+      const nextIndex = this._findActiveIndex(this._currentScroll);
+      if (this._activeIndex === -1) {
+        this._activeIndex = nextIndex;
+        this._segments[nextIndex].enter();
+      } else if (nextIndex !== this._activeIndex) {
+        this._transitionTo(nextIndex);
+      }
+    }
+    return this;
+  }
+
+  start() {
+    if (this._destroyed) throw new Error('Cannot start a destroyed ManderMotion instance.');
+    if (this._running) return this;
+    this._running = true;
+    this._lastTime = 0;
+    this._rafId = this._win.requestAnimationFrame(this._tick);
+    return this;
+  }
+
+  stop() {
+    if (!this._running) return this;
+    this._running = false;
+    this._win.cancelAnimationFrame(this._rafId);
+    this._rafId = 0;
+    this._lastTime = 0;
+    return this;
+  }
+
+  scrollTo(value, immediate = false) {
+    if (this._destroyed) return this;
+    this._targetScroll = clamp(Number(value) || 0, 0, this._totalLength);
+    if (immediate || this._reducedMotion) this._currentScroll = this._targetScroll;
+    return this;
+  }
+
+  scrollBy(delta, immediate = false) {
+    return this.scrollTo(this._targetScroll + delta, immediate);
+  }
+
+  destroy() {
+    if (this._destroyed) return;
+    this.stop();
+    this._destroyed = true;
+
+    this._win.removeEventListener('wheel', this._onWheel, LISTENER_OPTIONS);
+    this._win.removeEventListener('keydown', this._onKeyDown, LISTENER_OPTIONS);
+    this._win.removeEventListener('touchstart', this._onTouchStart, TOUCH_START_OPTIONS);
+    this._win.removeEventListener('touchmove', this._onTouchMove, LISTENER_OPTIONS);
+    this._win.removeEventListener('touchend', this._onTouchEnd, LISTENER_OPTIONS);
+    this._win.removeEventListener('touchcancel', this._onTouchEnd, LISTENER_OPTIONS);
+    this._win.removeEventListener('resize', this._onResize);
+
+    if (this._media.removeEventListener) this._media.removeEventListener('change', this._onMotionPreference);
+    else this._media.removeListener(this._onMotionPreference);
+
+    if (this._activeIndex >= 0) this._segments[this._activeIndex].exit();
+    if (this._lockNativeScroll) this._restoreNativeScroll();
+    this._segments.length = 0;
+    this._activeIndex = -1;
+  }
+
+  _bind() {
+    if (this._lockNativeScroll) this._disableNativeScroll();
+    this._win.addEventListener('wheel', this._onWheel, LISTENER_OPTIONS);
+    this._win.addEventListener('keydown', this._onKeyDown, LISTENER_OPTIONS);
+    this._win.addEventListener('touchstart', this._onTouchStart, TOUCH_START_OPTIONS);
+    this._win.addEventListener('touchmove', this._onTouchMove, LISTENER_OPTIONS);
+    this._win.addEventListener('touchend', this._onTouchEnd, LISTENER_OPTIONS);
+    this._win.addEventListener('touchcancel', this._onTouchEnd, LISTENER_OPTIONS);
+    this._win.addEventListener('resize', this._onResize);
+    if (this._media.addEventListener) this._media.addEventListener('change', this._onMotionPreference);
+    else this._media.addListener(this._onMotionPreference);
+  }
+
+  _disableNativeScroll() {
+    const rootStyle = this._doc.documentElement.style;
+    const bodyStyle = this._doc.body.style;
+    this._savedRootOverflow = rootStyle.overflow;
+    this._savedRootOverscroll = rootStyle.overscrollBehavior;
+    this._savedBodyOverflow = bodyStyle.overflow;
+    this._savedBodyOverscroll = bodyStyle.overscrollBehavior;
+    rootStyle.overflow = 'hidden';
+    rootStyle.overscrollBehavior = 'none';
+    bodyStyle.overflow = 'hidden';
+    bodyStyle.overscrollBehavior = 'none';
+  }
+
+  _restoreNativeScroll() {
+    const rootStyle = this._doc.documentElement.style;
+    const bodyStyle = this._doc.body.style;
+    rootStyle.overflow = this._savedRootOverflow;
+    rootStyle.overscrollBehavior = this._savedRootOverscroll;
+    bodyStyle.overflow = this._savedBodyOverflow;
+    bodyStyle.overscrollBehavior = this._savedBodyOverscroll;
+  }
+
+  _handleWheel(event) {
+    event.preventDefault();
+    let delta = event.deltaY;
+    if (event.deltaMode === 1) delta *= 16;
+    else if (event.deltaMode === 2) delta *= this._win.innerHeight;
+    this.scrollBy(delta * this._wheelMultiplier);
+  }
+
+  _handleKeyDown(event) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target)) return;
+
+    let destination = this._targetScroll;
+    const step = this._win.innerHeight * this._keyboardStep;
+    switch (event.key) {
+      case 'ArrowDown':
+        destination += step * 0.34;
+        break;
+      case 'ArrowUp':
+        destination -= step * 0.34;
+        break;
+      case 'PageDown':
+        destination += step;
+        break;
+      case 'PageUp':
+        destination -= step;
+        break;
+      case ' ':
+      case 'Spacebar':
+        destination += event.shiftKey ? -step : step;
+        break;
+      case 'Home':
+        destination = 0;
+        break;
+      case 'End':
+        destination = this._totalLength;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.scrollTo(destination);
+  }
+
+  _handleTouchStart(event) {
+    if (event.touches.length !== 1) return;
+    this._touching = true;
+    this._touchY = event.touches[0].clientY;
+  }
+
+  _handleTouchMove(event) {
+    if (!this._touching || event.touches.length !== 1) return;
+    event.preventDefault();
+    const nextY = event.touches[0].clientY;
+    this.scrollBy((this._touchY - nextY) * this._touchMultiplier);
+    this._touchY = nextY;
+  }
+
+  _handleTouchEnd() {
+    this._touching = false;
+  }
+
+  _handleResize() {
+    this.refresh();
+  }
+
+  _handleMotionPreference(event) {
+    this._reducedMotion = event.matches;
+    if (this._reducedMotion) this._currentScroll = this._targetScroll;
+  }
+
+  _findActiveIndex(scroll) {
+    const lastIndex = this._segments.length - 1;
+    if (scroll >= this._totalLength) return lastIndex;
+    let index = this._activeIndex < 0 ? 0 : this._activeIndex;
+    while (index < lastIndex && scroll >= this._segments[index].end) index += 1;
+    while (index > 0 && scroll < this._segments[index].start) index -= 1;
+    return index;
+  }
+
+  _transitionTo(nextIndex) {
+    const previousIndex = this._activeIndex;
+    if (nextIndex > previousIndex) {
+      for (let index = previousIndex; index < nextIndex; index += 1) {
+        this._segments[index].scrub(1);
+        this._segments[index].exit();
+        this._segments[index + 1].enter();
+      }
+    } else {
+      for (let index = previousIndex; index > nextIndex; index -= 1) {
+        this._segments[index].scrub(0);
+        this._segments[index].exit();
+        this._segments[index - 1].enter();
+      }
+    }
+    this._activeIndex = nextIndex;
+    this._onSegmentChange(nextIndex, previousIndex);
+  }
+
+  _frame(time) {
+    if (!this._running) return;
+
+    const dt = this._lastTime === 0 ? 1 / 60 : Math.min((time - this._lastTime) * 0.001, 0.064);
+    this._lastTime = time;
+    const previousScroll = this._currentScroll;
+
+    if (this._reducedMotion) {
+      this._currentScroll = this._targetScroll;
+    } else {
+      const frameLerp = 1 - Math.pow(1 - this._lerp, dt * 60);
+      this._currentScroll += (this._targetScroll - this._currentScroll) * frameLerp;
+      if (Math.abs(this._targetScroll - this._currentScroll) < 0.05) this._currentScroll = this._targetScroll;
+    }
+
+    this._velocity = dt > 0 ? (this._currentScroll - previousScroll) / dt : 0;
+
+    if (this._segments.length > 0) {
+      const nextIndex = this._findActiveIndex(this._currentScroll);
+      if (nextIndex !== this._activeIndex) this._transitionTo(nextIndex);
+
+      const active = this._segments[this._activeIndex];
+      const localLength = active.end - active.start;
+      const localProgress = localLength > 0 ? clamp((this._currentScroll - active.start) / localLength, 0, 1) : 0;
+      active.scrub(localProgress);
+
+      const first = Math.max(0, this._activeIndex - this._prewarm);
+      const last = Math.min(this._segments.length - 1, this._activeIndex + this._prewarm);
+      for (let index = first; index <= last; index += 1) {
+        this._segments[index].update(dt, this._velocity);
+      }
+    }
+
+    if (this._running) this._rafId = this._win.requestAnimationFrame(this._tick);
+  }
+}
+
+
+const annotationButton = document.querySelector('.study-help');
+const annotationPanel = document.querySelector('#study-annotation');
+function setAnnotation(open) {
+  document.body.classList.toggle('annotation-open', open);
+  annotationButton.setAttribute('aria-expanded', String(open));
+  annotationPanel.setAttribute('aria-hidden', String(!open));
+}
+annotationButton.addEventListener('click', () => setAnnotation(!document.body.classList.contains('annotation-open')));
+addEventListener('keydown', (event) => {
+  if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.key.toLowerCase() === 'a') setAnnotation(!document.body.classList.contains('annotation-open'));
+  if (event.key === 'Escape') setAnnotation(false);
+});
+
+
+const activeProgress = document.querySelector('#active-progress');
+const velocityValue = document.querySelector('#velocity-value');
+const railFill = document.querySelector('#rail-fill');
+const railPercent = document.querySelector('#rail-percent');
+function renderTelemetry(progress) {
+  activeProgress.textContent = progress.toFixed(3);
+  railFill.style.transform = `scaleY(${progress})`;
+  railPercent.textContent = `${(progress * 100).toFixed(1).padStart(5, '0')}%`;
+  velocityValue.textContent = `${engine.velocity >= 0 ? '+' : '−'}${String(Math.round(Math.abs(engine.velocity))).padStart(4, '0')}`;
+}
+
+
+let engine;
+const scene = document.querySelector('.scene-type');
+const annotationProgress = document.querySelector('#annotation-progress');
+const annotationClip = document.querySelector('#annotation-clip');
+const annotationVelocity = document.querySelector('#annotation-velocity');
+function scrub(progress) {
+  const clip = (1 - progress) * 100;
+  scene.style.setProperty('--reveal', `${clip}%`);
+  scene.style.setProperty('--type-shift', String(progress * 26));
+  renderTelemetry(progress);
+  annotationProgress.textContent = progress.toFixed(3);
+  annotationClip.textContent = `${clip.toFixed(1)}%`;
+  annotationVelocity.textContent = `${engine.velocity >= 0 ? '+' : '−'}${String(Math.round(Math.abs(engine.velocity))).padStart(4, '0')} px/s`;
+}
+engine = new ManderMotion({ lerp: .09, touchMultiplier: 1.45, prewarm: 0 });
+engine.register({ name: 'typographic-pin', lengthVh: 165, scrub }).start();
+console.info('[mander-motion] booting Study 01 · typographic-pin');
+addEventListener('pagehide', () => engine.destroy(), { once: true });
+window.manderMotion = engine;</script>
+</body>
+</html>

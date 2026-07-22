@@ -162,10 +162,29 @@ export async function middleware(request: NextRequest) {
   });
   
   // Apply Content Security Policy
-  // (skipped for the static inline-by-design pages: byline homepage + field notes)
+  // (skipped for the static inline-by-design pages: byline, field notes, and studies)
   const csp = getCSP(nonce);
   const p = request.nextUrl.pathname;
-  const inlineStaticPages = ['/', '/byline.html', '/field-notes', '/field-notes.html'];
+  const inlineStaticPages = [
+    '/',
+    '/byline.html',
+    '/field-notes',
+    '/field-notes.html',
+    '/studies',
+    '/studies/index.html',
+    '/studies/01',
+    '/studies/02',
+    '/studies/03',
+    '/studies/04',
+    '/studies/05',
+    '/studies/06',
+    '/studies/study-01.html',
+    '/studies/study-02.html',
+    '/studies/study-03.html',
+    '/studies/study-04.html',
+    '/studies/study-05.html',
+    '/studies/study-06.html',
+  ];
   if (!inlineStaticPages.includes(p)) {
     response.headers.set('Content-Security-Policy', csp);
   }

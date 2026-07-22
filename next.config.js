@@ -5,6 +5,11 @@ const nextConfig = {
       beforeFiles: [
         { source: "/", destination: "/byline.html" },
         { source: "/field-notes", destination: "/field-notes.html" },
+        { source: "/studies", destination: "/studies/index.html" },
+        {
+          source: "/studies/:n(\\d{2})",
+          destination: "/studies/study-:n.html",
+        },
       ],
     };
   },
