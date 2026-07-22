@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    return { beforeFiles: [{ source: "/", destination: "/byline.html" }] };
+    return {
+      beforeFiles: [
+        { source: "/", destination: "/byline.html" },
+        { source: "/field-notes", destination: "/field-notes.html" },
+      ],
+    };
   },
   pageExtensions: ["js", "jsx", "mdx", "ts", "tsx"],
   experimental: {

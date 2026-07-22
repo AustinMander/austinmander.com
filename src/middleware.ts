@@ -162,10 +162,11 @@ export async function middleware(request: NextRequest) {
   });
   
   // Apply Content Security Policy
-  // (skipped for the static byline homepage — it is fully inline by design)
+  // (skipped for the static inline-by-design pages: byline homepage + field notes)
   const csp = getCSP(nonce);
   const p = request.nextUrl.pathname;
-  if (p !== '/' && p !== '/byline.html') {
+  const inlineStaticPages = ['/', '/byline.html', '/field-notes', '/field-notes.html'];
+  if (!inlineStaticPages.includes(p)) {
     response.headers.set('Content-Security-Policy', csp);
   }
   
