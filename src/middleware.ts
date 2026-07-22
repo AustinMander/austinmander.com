@@ -178,12 +178,14 @@ export async function middleware(request: NextRequest) {
     '/studies/04',
     '/studies/05',
     '/studies/06',
+    '/studies/07',
     '/studies/study-01.html',
     '/studies/study-02.html',
     '/studies/study-03.html',
     '/studies/study-04.html',
     '/studies/study-05.html',
     '/studies/study-06.html',
+    '/studies/study-07.html',
   ];
   if (!inlineStaticPages.includes(p)) {
     response.headers.set('Content-Security-Policy', csp);

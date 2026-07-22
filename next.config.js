@@ -6,6 +6,8 @@ const nextConfig = {
         { source: "/", destination: "/byline.html" },
         { source: "/field-notes", destination: "/field-notes.html" },
         { source: "/studies", destination: "/studies/index.html" },
+        { source: "/studies/05", destination: "/studies/study-05.html" },
+        { source: "/studies/07", destination: "/studies/study-07.html" },
         {
           source: "/studies/:n(\\d{2})",
           destination: "/studies/study-:n.html",
