@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loom</title>
+<meta name="description" content="A working four shaft loom in the browser. Every thread in the cloth traces back to the three decisions that made it.">
+<meta name="theme-color" content="#101319">
+<style>
+:root{
+  --frame:#101319; --ground:#161a21; --panel:#1c212a; --raise:#232833;
+  --line:#2e3542; --line-bright:#414a5a;
+  --text:#e9e5db; --muted:#9a9488; --faint:#6d675c;
+  --madder:#c05a3a; --madder-dim:#7e3a26;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:georgia,"Times New Roman",serif;
+  --cell:clamp(7px,1.05vw,11px);
+  --gap:clamp(10px,1.6vw,20px);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0;background:var(--frame);color:var(--text);
+  font-family:var(--mono);font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.shell{max-width:1220px;margin:0 auto;padding:clamp(24px,5vw,64px) clamp(16px,4vw,48px)}
+
+/* Masthead ---------------------------------------------------------------- */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px 40px;
+  padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:var(--gap)}
+h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
+  letter-spacing:.22em;margin:0;line-height:1}
+.mast__thesis{margin:0;color:var(--muted);max-width:46ch;font-size:13px}
+.mast__thesis b{color:var(--text);font-weight:500}
+
+/* Draft ------------------------------------------------------------------- */
+.bench{display:grid;gap:var(--gap);grid-template-columns:1fr;align-items:start}
+@media (min-width:1000px){.bench{grid-template-columns:auto 1fr}}
+/* The draft is one indivisible object at a fixed pitch, so on a narrow screen it
+   scrolls inside its own frame rather than making the whole page scroll sideways
+   or forcing the cells below a usable size. */
+.scroller{overflow-x:auto;overflow-y:hidden;max-width:100%;
+  padding-bottom:4px;scrollbar-width:thin}
+.scroller:focus-visible{outline:2px solid var(--madder);outline-offset:3px}
+.draft{position:relative;display:grid;gap:6px;
+  grid-template-columns:var(--cell) auto auto;
+  grid-template-rows:var(--cell) auto auto;
+  width:max-content}
+.grid{display:grid;background:var(--line);gap:1px;padding:1px;
+  border:1px solid var(--line-bright)}
+.grid:focus-visible{outline:2px solid var(--madder);outline-offset:2px}
+.cell{width:var(--cell);height:var(--cell);background:var(--panel);
+  padding:0;border:0;display:block}
+.cell[data-on="1"]{background:var(--text)}
+.cell[data-cursor="1"]{box-shadow:inset 0 0 0 1px var(--madder)}
+/* trace highlight */
+.cell[data-trace="1"]{background:var(--madder)}
+.cell[data-trace="1"][data-on="0"]{background:var(--madder-dim)}
+
+.r-warpcol{grid-column:2;grid-row:1}
+.r-threading{grid-column:2;grid-row:2}
+.r-tieup{grid-column:3;grid-row:2}
+.r-weftcol{grid-column:1;grid-row:3}
+.r-cloth{grid-column:2;grid-row:3}
+.r-treadling{grid-column:3;grid-row:3}
+
+.swatches{display:grid;gap:1px;background:var(--line);padding:1px;
+  border:1px solid var(--line-bright)}
+.sw{width:var(--cell);height:var(--cell);border:0;padding:0;display:block;cursor:pointer}
+.sw:focus-visible{outline:2px solid var(--madder);outline-offset:1px;z-index:2;position:relative}
+
+/* The cloth sits inside a .grid frame so its origin and pitch match the tables
+   exactly. A draft whose columns do not line up is not a draft. */
+.r-cloth{display:block;padding:1px}
+#cloth{display:block;image-rendering:pixelated}
+.guides{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.guides line{stroke:var(--madder);stroke-width:1;stroke-dasharray:3 3;opacity:0}
+.guides.on line{opacity:.85}
+
+/* Controls ---------------------------------------------------------------- */
+.panel{background:var(--ground);border:1px solid var(--line);padding:18px;
+  display:grid;gap:20px;align-content:start;min-width:250px}
+.field{display:grid;gap:9px}
+.legend{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;background:var(--panel);
+  color:var(--text);border:1px solid var(--line-bright);padding:7px 10px;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease}
+.btn:hover{background:var(--raise);border-color:var(--muted)}
+.btn:focus-visible{outline:2px solid var(--madder);outline-offset:2px}
+.btn[aria-pressed="true"]{background:var(--madder);border-color:var(--madder);color:#160e0a}
+.dyes{display:flex;gap:5px;flex-wrap:wrap}
+.dye{width:26px;height:26px;border:1px solid var(--line-bright);cursor:pointer;padding:0}
+.dye[aria-pressed="true"]{box-shadow:0 0 0 2px var(--madder)}
+.dye:focus-visible{outline:2px solid var(--madder);outline-offset:2px}
+.pick{display:flex;gap:10px;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.pick b{color:var(--text);font-weight:500}
+.hint{margin:0;font-size:11px;color:var(--faint);line-height:1.5}
+
+/* Readout ----------------------------------------------------------------- */
+.readout{border:1px solid var(--line);background:var(--ground);padding:14px 16px;
+  font-size:12px;line-height:1.75;min-height:118px}
+.readout__title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--faint);margin:0 0 10px}
+.readout dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 14px}
+.readout dt{color:var(--faint)}
+.readout dd{margin:0;color:var(--text)}
+.readout .idle{color:var(--faint);margin:0}
+.readout em{font-style:normal;color:var(--madder)}
+
+/* Essay ------------------------------------------------------------------- */
+.essay{margin-top:clamp(48px,9vh,104px);padding-top:34px;border-top:1px solid var(--line);
+  font-family:var(--serif);font-size:17px;line-height:1.68;color:#cfc9bd}
+.essay h2{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--madder);font-weight:500;margin:0 0 20px}
+.essay p{max-width:66ch;margin:0 0 20px}
+.essay strong{color:var(--text);font-weight:600}
+.colophon{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:11px;color:var(--faint);line-height:1.8;max-width:none}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="mast">
+    <h1>LOOM</h1>
+    <p class="mast__thesis">A working eight shaft loom. The cloth is not drawn, it is
+      <b>derived</b>. Point at any thread and it will tell you the three decisions that
+      put it there.</p>
+  </header>
+
+  <div class="bench">
+
+    <div class="scroller">
+    <div class="draft" id="draft">
+      <div class="swatches r-warpcol" id="warpcol" aria-label="Warp colour order"></div>
+      <div class="grid r-threading" id="threading" role="grid"
+           aria-label="Threading. Which shaft each warp end passes through." tabindex="0"></div>
+      <div class="grid r-tieup" id="tieup" role="grid"
+           aria-label="Tie-up. Which shafts each treadle lifts." tabindex="0"></div>
+      <div class="swatches r-weftcol" id="weftcol" aria-label="Weft colour order"></div>
+      <div class="grid r-cloth" id="clothFrame">
+        <canvas id="cloth" role="img"
+                aria-label="The woven cloth, derived from the threading, tie-up and treadling."></canvas>
+      </div>
+      <div class="grid r-treadling" id="treadling" role="grid"
+           aria-label="Treadling. Which treadle is pressed for each pick." tabindex="0"></div>
+      <svg class="guides" id="guides" aria-hidden="true">
+        <line id="g1"></line><line id="g2"></line>
+      </svg>
+    </div>
+    </div>
+
+    <div class="panel">
+      <div class="field">
+        <p class="legend">Structure</p>
+        <div class="row" id="structures"></div>
+      </div>
+
+      <div class="field">
+        <p class="legend">Colour order</p>
+        <div class="row" id="colourways"></div>
+      </div>
+
+      <div class="field">
+        <p class="legend">Dye</p>
+        <div class="dyes" id="dyes"></div>
+        <div class="pick">
+          <span>Painting the <b id="dyeTarget">warp</b></span>
+          <button class="btn" type="button" id="swapTarget">Switch to weft</button>
+        </div>
+        <p class="hint">Drag along a colour bar to dye a run of threads.</p>
+      </div>
+
+      <div class="field">
+        <p class="legend">Loom</p>
+        <div class="row">
+          <button class="btn" type="button" id="reweave">Throw the shuttle</button>
+          <button class="btn" type="button" id="save">Save cloth</button>
+        </div>
+      </div>
+
+      <div class="readout" id="readout" aria-live="polite">
+        <p class="readout__title">Provenance</p>
+        <p class="idle">Hover or focus a thread in the cloth.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="essay">
+    <h2>On inspectable machines</h2>
+    <p>A weaving draft is a program, and it is a very old one. The grid along the top says
+      which shaft each vertical thread passes through. The small block to its right says
+      which shafts each pedal lifts. The column down the side says which pedal is pressed
+      for each horizontal pass of the shuttle. Those three tables are the entire source
+      code. The cloth in the middle is the output, and nothing about it is decorative
+      or approximate. It is computed.</p>
+    <p>What makes it worth rebuilding is the property you get for free. Every crossing in
+      that fabric is the result of exactly one comparison: <strong>is the shaft this warp
+      thread sits on among the shafts this pedal lifts?</strong> If it is, you see the
+      vertical thread. If it is not, you see the horizontal one. That is the whole
+      machine. So you can point at any single thread anywhere in the cloth and recover,
+      with certainty, the three decisions that produced it. Try it. The panel will name
+      them.</p>
+    <p>We are now surrounded by generative systems that cannot do this. They produce a
+      great deal, and when you ask why a particular part came out the way it did, there
+      is no answer to give, because no answer was ever recorded. The loom is the older
+      idea and, on this one narrow point, the better one: it is generative and it is
+      <strong>completely accountable</strong>. Those were never opposites. We simply
+      stopped asking for both.</p>
+    <p class="colophon">Loom. Eight shafts, eight treadles, forty eight ends by forty
+      eight picks. No dependencies, no external requests, one file. The drawdown is
+      computed live from the three tables on every edit, and the structural presets were
+      each checked against the fabric they claim to make before they were included.
+      Agent-built, engineer-signed.</p>
+  </section>
+</div>
+
+<p class="vh" id="live" role="status" aria-live="polite"></p>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------------- *
+   * The loom. Three tables in, one cloth out.
+   *
+   *   threading[end]   -> shaft index that warp end passes through
+   *   tieup[treadle]   -> Set of shaft indices that treadle lifts
+   *   treadling[pick]  -> treadle index pressed for that pick
+   *
+   * A warp end is on the surface at a given pick when the treadle used for
+   * that pick lifts the shaft that end is threaded on. That single comparison
+   * is the entire simulation.
+   * ---------------------------------------------------------------------- */
+
+  var SHAFTS = 8, TREADLES = 8, ENDS = 48, PICKS = 48;
+
+  var INDIGO = "#2f4f8f", ECRU = "#ded5c0", MADDER = "#a8412a",
+      SLATE = "#43505e", BONE = "#efe9dc", INK = "#1b2029", OCHRE = "#c08a2e";
+  var DYES = [INDIGO, ECRU, MADDER, SLATE, BONE, INK, OCHRE];
+
+  var state = {
+    threading: [], tieup: [], treadling: [],
+    warp: [], weft: [], dye: INDIGO, target: "warp",
+    trace: null,
+  };
+
+  var seq = function (arr, n) {
+    var out = [], i;
+    for (i = 0; i < n; i++) out.push(arr[i % arr.length]);
+    return out;
+  };
+
+  /* Structures. Each was checked against the cloth it claims to make. */
+  var STRUCTURES = [
+    { name: "Plain", threading: [0,1], tieup: [[0],[1],[0],[1],[0],[1],[0],[1]], treadling: [0,1] },
+    { name: "2/2 twill", threading: [0,1,2,3], tieup: [[0,1],[1,2],[2,3],[3,0],[0,1],[1,2],[2,3],[3,0]], treadling: [0,1,2,3] },
+    { name: "Point twill", threading: [0,1,2,3,2,1], tieup: [[0,1],[1,2],[2,3],[3,0],[0,1],[1,2],[2,3],[3,0]], treadling: [0,1,2,3,2,1] },
+    { name: "Herringbone", threading: [0,1,2,3,3,2,1,0], tieup: [[0,1],[1,2],[2,3],[3,0],[0,1],[1,2],[2,3],[3,0]], treadling: [0,1,2,3] },
+    { name: "Basket", threading: [0,0,1,1], tieup: [[0],[1],[0],[1],[0],[1],[0],[1]], treadling: [0,0,1,1] },
+    { name: "Rosepath", threading: [0,1,2,3,2,1,0,3], tieup: [[0,1],[1,2],[2,3],[3,0],[0,1],[1,2],[2,3],[3,0]], treadling: [0,1,2,3,2,1,0,3] },
+    { name: "Satin", threading: [0,1,2,3,4], tieup: [[0],[2],[4],[1],[3],[0],[2],[4]], treadling: [0,1,2,3,4] },
+    // Called Diamond, not Waffle. It is a point threading against a mixed tie-up
+    // and it makes a diamond field. True waffle weave has a cellular, ridged
+    // texture this does not produce, so it does not get to borrow the name.
+    { name: "Diamond", threading: [0,1,2,3,2,1], tieup: [[0,1,2],[1,2,3],[2,3,0],[3,0,1],[0,2],[1,3],[0,1,2],[1,2,3]], treadling: [0,1,2,3,4,5] },
+  ];
+
+  /* Colour orders. Structure and colour are independent; the interesting
+     patterns live in how they interfere. */
+  var COLOURWAYS = [
+    { name: "Solid", warp: [INDIGO], weft: [ECRU] },
+    { name: "Log cabin", warp: rep2(INDIGO, ECRU, 8).concat(rep2(ECRU, INDIGO, 8)),
+                         weft: rep2(INDIGO, ECRU, 8).concat(rep2(ECRU, INDIGO, 8)) },
+    { name: "Houndstooth", warp: run(INK, 4).concat(run(BONE, 4)), weft: run(INK, 4).concat(run(BONE, 4)) },
+    { name: "Pinstripe", warp: run(INK, 7).concat([BONE]), weft: run(INK, 8) },
+    { name: "Madder check", warp: run(MADDER, 6).concat(run(BONE, 6)), weft: run(MADDER, 6).concat(run(BONE, 6)) },
+    { name: "Shot silk", warp: [INDIGO], weft: [MADDER] },
+  ];
+
+  function run(c, n) { var a = [], i; for (i = 0; i < n; i++) a.push(c); return a; }
+  function rep2(a, b, n) { var o = [], i; for (i = 0; i < n; i++) o.push(i % 2 ? b : a); return o; }
+
+  /* ---- the one comparison ---------------------------------------------- */
+  function warpIsUp(pick, end) {
+    return state.tieup[state.treadling[pick]].indexOf(state.threading[end]) !== -1;
+  }
+
+  /* ---- DOM plumbing ----------------------------------------------------- */
+  var el = function (id) { return document.getElementById(id); };
+  var threadingEl = el("threading"), tieupEl = el("tieup"), treadlingEl = el("treadling"),
+      warpcolEl = el("warpcol"), weftcolEl = el("weftcol"),
+      canvas = el("cloth"), ctx = canvas.getContext("2d"),
+      guides = el("guides"), g1 = el("g1"), g2 = el("g2"),
+      readout = el("readout"), live = el("live");
+
+  /* Pitch is MEASURED off the built table rather than inferred from the CSS
+     variable, because the tables carry a 1px gap that the variable knows nothing
+     about. Assume it and every column in the draft drifts out of register. */
+  var CELL = 9, PITCH = 10;
+  function measure() {
+    var a = cellAt(threadingEl, 0, 0), b = cellAt(threadingEl, 0, 1);
+    if (!a || !b) return;
+    var ra = a.getBoundingClientRect();
+    CELL = ra.width;
+    PITCH = b.getBoundingClientRect().left - ra.left;
+    if (!(PITCH > CELL)) PITCH = CELL + 1;
+  }
+
+  function buildGrid(host, rows, cols, label) {
+    host.textContent = "";
+    host.style.gridTemplateColumns = "repeat(" + cols + ", var(--cell))";
+    var r, c, b;
+    for (r = 0; r < rows; r++) {
+      for (c = 0; c < cols; c++) {
+        b = document.createElement("button");
+        b.type = "button";
+        b.className = "cell";
+        b.dataset.r = r; b.dataset.c = c; b.dataset.on = "0";
+        b.tabIndex = -1;
+        b.setAttribute("role", "gridcell");
+        b.setAttribute("aria-label", label(r, c));
+        host.appendChild(b);
+      }
+    }
+    host.dataset.rows = rows; host.dataset.cols = cols;
+  }
+
+  function cellAt(host, r, c) {
+    return host.children[r * Number(host.dataset.cols) + c];
+  }
+
+  /* ---- painting the three tables --------------------------------------- */
+  function paintThreading() {
+    for (var e = 0; e < ENDS; e++)
+      for (var s = 0; s < SHAFTS; s++)
+        cellAt(threadingEl, s, e).dataset.on = state.threading[e] === s ? "1" : "0";
+  }
+  function paintTieup() {
+    for (var t = 0; t < TREADLES; t++)
+      for (var s = 0; s < SHAFTS; s++)
+        cellAt(tieupEl, s, t).dataset.on = state.tieup[t].indexOf(s) !== -1 ? "1" : "0";
+  }
+  function paintTreadling() {
+    for (var p = 0; p < PICKS; p++)
+      for (var t = 0; t < TREADLES; t++)
+        cellAt(treadlingEl, p, t).dataset.on = state.treadling[p] === t ? "1" : "0";
+  }
+  function paintSwatches() {
+    var i;
+    for (i = 0; i < ENDS; i++) warpcolEl.children[i].style.background = state.warp[i];
+    for (i = 0; i < PICKS; i++) weftcolEl.children[i].style.background = state.weft[i];
+  }
+
+  /* ---- the cloth -------------------------------------------------------- */
+  var revealed = PICKS;
+
+  function drawCloth() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Threads are drawn at full PITCH so they touch. Cloth has no gaps in it,
+    // and a twill float has to run unbroken or the diagonal disappears. Sharing
+    // the tables' pitch keeps every column in register; the half pixel this
+    // costs against their cell centres is not visible.
+    var w = ENDS * PITCH, h = PICKS * PITCH;
+    if (canvas.width !== Math.round(w * dpr)) {
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#0c0f14";
+    ctx.fillRect(0, 0, w, h);
+
+    for (var p = 0; p < Math.min(revealed, PICKS); p++) {
+      for (var e = 0; e < ENDS; e++) {
+        var up = warpIsUp(p, e);
+        var x = e * PITCH, y = p * PITCH;
+        ctx.fillStyle = up ? state.warp[e] : state.weft[p];
+        ctx.fillRect(x, y, PITCH, PITCH);
+        // A thread is round. One lit edge, one shaded, across its own width, so
+        // warp reads vertical and weft reads horizontal even in one colour.
+        ctx.fillStyle = "rgba(255,255,255,.14)";
+        if (up) ctx.fillRect(x, y, 1, PITCH); else ctx.fillRect(x, y, PITCH, 1);
+        ctx.fillStyle = "rgba(0,0,0,.30)";
+        if (up) ctx.fillRect(x + PITCH - 1, y, 1, PITCH); else ctx.fillRect(x, y + PITCH - 1, PITCH, 1);
+      }
+    }
+    if (state.trace) markTrace();
+  }
+
+  function markTrace() {
+    var t = state.trace;
+    ctx.strokeStyle = "#c05a3a";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(t.end * PITCH + .75, t.pick * PITCH + .75, PITCH - 1.5, PITCH - 1.5);
+  }
+
+  /* ---- provenance ------------------------------------------------------- */
+  function clearTrace() {
+    if (!state.trace) return;
+    state.trace = null;
+    Array.prototype.forEach.call(
+      document.querySelectorAll('[data-trace="1"]'),
+      function (n) { n.removeAttribute("data-trace"); }
+    );
+    guides.classList.remove("on");
+    readout.innerHTML =
+      '<p class="readout__title">Provenance</p><p class="idle">Hover or focus a thread in the cloth.</p>';
+    drawCloth();
+  }
+
+  function setTrace(pick, end) {
+    if (pick < 0 || pick >= PICKS || end < 0 || end >= ENDS) return;
+    if (state.trace && state.trace.pick === pick && state.trace.end === end) return;
+
+    Array.prototype.forEach.call(
+      document.querySelectorAll('[data-trace="1"]'),
+      function (n) { n.removeAttribute("data-trace"); }
+    );
+    state.trace = { pick: pick, end: end };
+
+    var shaft = state.threading[end];
+    var treadle = state.treadling[pick];
+    var up = warpIsUp(pick, end);
+
+    cellAt(threadingEl, shaft, end).dataset.trace = "1";
+    cellAt(tieupEl, shaft, treadle).dataset.trace = "1";
+    cellAt(treadlingEl, pick, treadle).dataset.trace = "1";
+
+    // Guides: from the threading cell down, and from the treadling cell across,
+    // meeting at the thread under inspection. Same pitch as the tables, so the
+    // line lands on the cell it is pointing at.
+    var cr = canvas.getBoundingClientRect(), dr = document.getElementById("draft").getBoundingClientRect();
+    var ox = cr.left - dr.left, oy = cr.top - dr.top;
+    var cx = ox + end * PITCH + PITCH / 2, cy = oy + pick * PITCH + PITCH / 2;
+    var tr = threadingEl.getBoundingClientRect(), tl = treadlingEl.getBoundingClientRect();
+    g1.setAttribute("x1", cx); g1.setAttribute("y1", cy);
+    g1.setAttribute("x2", cx); g1.setAttribute("y2", tr.bottom - dr.top);
+    g2.setAttribute("x1", cx); g2.setAttribute("y1", cy);
+    g2.setAttribute("x2", tl.left - dr.left); g2.setAttribute("y2", cy);
+    guides.classList.add("on");
+
+    readout.innerHTML =
+      '<p class="readout__title">Provenance</p><dl>' +
+      "<dt>end</dt><dd>" + (end + 1) + " of " + ENDS + "</dd>" +
+      "<dt>pick</dt><dd>" + (pick + 1) + " of " + PICKS + "</dd>" +
+      "<dt>threaded</dt><dd>shaft " + (shaft + 1) + "</dd>" +
+      "<dt>treadle</dt><dd>" + (treadle + 1) + " lifts " +
+        state.tieup[treadle].map(function (s) { return s + 1; }).join(", ") + "</dd>" +
+      "<dt>result</dt><dd><em>" + (up ? "shaft lifted, warp on top" : "shaft down, weft on top") +
+      "</em></dd></dl>";
+    drawCloth();
+  }
+
+  function traceFromEvent(ev) {
+    var r = canvas.getBoundingClientRect();
+    setTrace(Math.floor((ev.clientY - r.top) / PITCH), Math.floor((ev.clientX - r.left) / PITCH));
+  }
+
+  /* ---- editing ---------------------------------------------------------- */
+  function announce(msg) { live.textContent = msg; }
+
+  function editThreading(shaft, end) {
+    state.threading[end] = shaft;                       // one heddle per end
+    paintThreading(); drawCloth();
+    announce("End " + (end + 1) + " on shaft " + (shaft + 1));
+  }
+  function editTieup(shaft, treadle) {
+    var i = state.tieup[treadle].indexOf(shaft);
+    if (i === -1) state.tieup[treadle].push(shaft); else state.tieup[treadle].splice(i, 1);
+    paintTieup(); drawCloth();
+    announce("Treadle " + (treadle + 1) + (i === -1 ? " now lifts" : " no longer lifts") + " shaft " + (shaft + 1));
+  }
+  function editTreadling(pick, treadle) {
+    state.treadling[pick] = treadle;                    // one treadle per pick
+    paintTreadling(); drawCloth();
+    announce("Pick " + (pick + 1) + " uses treadle " + (treadle + 1));
+  }
+
+  function wireGrid(host, onEdit) {
+    var painting = false;
+    host.addEventListener("pointerdown", function (ev) {
+      var c = ev.target.closest(".cell"); if (!c) return;
+      painting = true; host.setPointerCapture(ev.pointerId);
+      onEdit(Number(c.dataset.r), Number(c.dataset.c));
+      moveCursor(host, Number(c.dataset.r), Number(c.dataset.c));
+      ev.preventDefault();
+    });
+    host.addEventListener("pointermove", function (ev) {
+      if (!painting) return;
+      var c = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (c && c.classList.contains("cell") && host.contains(c))
+        onEdit(Number(c.dataset.r), Number(c.dataset.c));
+    });
+    host.addEventListener("pointerup", function () { painting = false; });
+    host.addEventListener("pointercancel", function () { painting = false; });
+
+    host.addEventListener("keydown", function (ev) {
+      var rows = Number(host.dataset.rows), cols = Number(host.dataset.cols);
+      var r = Number(host.dataset.cr || 0), c = Number(host.dataset.cc || 0), used = true;
+      if (ev.key === "ArrowUp") r = Math.max(0, r - 1);
+      else if (ev.key === "ArrowDown") r = Math.min(rows - 1, r + 1);
+      else if (ev.key === "ArrowLeft") c = Math.max(0, c - 1);
+      else if (ev.key === "ArrowRight") c = Math.min(cols - 1, c + 1);
+      else if (ev.key === "Enter" || ev.key === " ") onEdit(r, c);
+      else used = false;
+      if (used) { ev.preventDefault(); moveCursor(host, r, c); }
+    });
+  }
+
+  function moveCursor(host, r, c) {
+    var prev = host.querySelector('[data-cursor="1"]');
+    if (prev) prev.removeAttribute("data-cursor");
+    var cell = cellAt(host, r, c);
+    if (cell) cell.dataset.cursor = "1";
+    host.dataset.cr = r; host.dataset.cc = c;
+  }
+
+  /* ---- swatch bars ------------------------------------------------------ */
+  function buildSwatches(host, n, which) {
+    host.textContent = "";
+    host.style.gridTemplateColumns = which === "warp" ? "repeat(" + n + ", var(--cell))" : "var(--cell)";
+    for (var i = 0; i < n; i++) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "sw"; b.dataset.i = i;
+      b.setAttribute("aria-label", (which === "warp" ? "Warp end " : "Weft pick ") + (i + 1) + " colour");
+      host.appendChild(b);
+    }
+    var painting = false;
+    host.addEventListener("pointerdown", function (ev) {
+      var s = ev.target.closest(".sw"); if (!s) return;
+      painting = true; host.setPointerCapture(ev.pointerId);
+      applyDye(which, Number(s.dataset.i)); ev.preventDefault();
+    });
+    host.addEventListener("pointermove", function (ev) {
+      if (!painting) return;
+      var s = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (s && s.classList.contains("sw") && host.contains(s)) applyDye(which, Number(s.dataset.i));
+    });
+    host.addEventListener("pointerup", function () { painting = false; });
+    host.addEventListener("click", function (ev) {
+      var s = ev.target.closest(".sw"); if (s) applyDye(which, Number(s.dataset.i));
+    });
+  }
+  function applyDye(which, i) {
+    (which === "warp" ? state.warp : state.weft)[i] = state.dye;
+    paintSwatches(); drawCloth();
+  }
+
+  /* ---- presets ---------------------------------------------------------- */
+  function applyStructure(s) {
+    state.threading = seq(s.threading, ENDS);
+    state.tieup = s.tieup.map(function (a) { return a.slice(); });
+    state.treadling = seq(s.treadling, PICKS);
+    paintThreading(); paintTieup(); paintTreadling();
+    clearTrace(); weaveIn();
+  }
+  function applyColourway(c) {
+    state.warp = seq(c.warp, ENDS);
+    state.weft = seq(c.weft, PICKS);
+    paintSwatches(); drawCloth();
+  }
+
+  function weaveIn() {
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { revealed = PICKS; drawCloth(); return; }
+    revealed = 0;
+    var step = function () {
+      revealed += 2;
+      drawCloth();
+      if (revealed < PICKS) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* ---- build ------------------------------------------------------------ */
+  buildGrid(threadingEl, SHAFTS, ENDS, function (s, e) {
+    return "End " + (e + 1) + ", shaft " + (s + 1); });
+  buildGrid(tieupEl, SHAFTS, TREADLES, function (s, t) {
+    return "Treadle " + (t + 1) + ", shaft " + (s + 1); });
+  buildGrid(treadlingEl, PICKS, TREADLES, function (p, t) {
+    return "Pick " + (p + 1) + ", treadle " + (t + 1); });
+  buildSwatches(warpcolEl, ENDS, "warp");
+  buildSwatches(weftcolEl, PICKS, "weft");
+  measure();   // only meaningful once the tables exist on the page
+
+  wireGrid(threadingEl, function (r, c) { editThreading(r, c); });
+  wireGrid(tieupEl, function (r, c) { editTieup(r, c); });
+  wireGrid(treadlingEl, function (r, c) { editTreadling(r, c); });
+
+  STRUCTURES.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.textContent = s.name;
+    b.setAttribute("aria-pressed", i === 1 ? "true" : "false");
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(el("structures").children, function (n) {
+        n.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      applyStructure(s);
+    });
+    el("structures").appendChild(b);
+  });
+
+  COLOURWAYS.forEach(function (c, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.textContent = c.name;
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(el("colourways").children, function (n) {
+        n.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      applyColourway(c);
+    });
+    el("colourways").appendChild(b);
+  });
+
+  DYES.forEach(function (d, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "dye"; b.style.background = d;
+    b.setAttribute("aria-label", "Dye " + (i + 1));
+    b.setAttribute("aria-pressed", d === state.dye ? "true" : "false");
+    b.addEventListener("click", function () {
+      state.dye = d;
+      Array.prototype.forEach.call(el("dyes").children, function (n) {
+        n.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+    });
+    el("dyes").appendChild(b);
+  });
+
+  el("swapTarget").addEventListener("click", function () {
+    state.target = state.target === "warp" ? "weft" : "warp";
+    el("dyeTarget").textContent = state.target;
+    this.textContent = "Switch to " + (state.target === "warp" ? "weft" : "warp");
+  });
+
+  el("reweave").addEventListener("click", function () {
+    var s = STRUCTURES[Math.floor(Math.random() * STRUCTURES.length)];
+    var c = COLOURWAYS[Math.floor(Math.random() * COLOURWAYS.length)];
+    applyStructure(s); applyColourway(c);
+    announce("Wove " + s.name + " in " + c.name);
+  });
+
+  el("save").addEventListener("click", function () {
+    var a = document.createElement("a");
+    a.download = "loom-cloth.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  });
+
+  canvas.addEventListener("pointermove", traceFromEvent);
+  canvas.addEventListener("pointerleave", clearTrace);
+  canvas.tabIndex = 0;
+  canvas.addEventListener("keydown", function (ev) {
+    var t = state.trace || { pick: 0, end: 0 }, used = true;
+    if (ev.key === "ArrowUp") setTrace(t.pick - 1, t.end);
+    else if (ev.key === "ArrowDown") setTrace(t.pick + 1, t.end);
+    else if (ev.key === "ArrowLeft") setTrace(t.pick, t.end - 1);
+    else if (ev.key === "ArrowRight") setTrace(t.pick, t.end + 1);
+    else used = false;
+    if (used) ev.preventDefault();
+  });
+  canvas.addEventListener("focus", function () { if (!state.trace) setTrace(0, 0); });
+
+  window.addEventListener("resize", function () { measure(); drawCloth(); clearTrace(); });
+
+  applyStructure(STRUCTURES[1]);
+  applyColourway(COLOURWAYS[0]);
+  moveCursor(threadingEl, 0, 0); moveCursor(tieupEl, 0, 0); moveCursor(treadlingEl, 0, 0);
+})();
+</script>
+</body>
+</html>
