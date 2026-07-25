@@ -104,9 +104,15 @@ function readNotes(dir) {
   return { title, intent };
 }
 
-// House rule: no em dashes in shipped copy.
+// House rule: no em dashes in shipped copy. The notes are markdown, so inline
+// code ticks and emphasis markers have to come off too, or they render as
+// literal punctuation on the gallery card.
 function houseCopy(s) {
-  return s.replace(/\s*—\s*/g, " / ");
+  return s
+    .replace(/\s*—\s*/g, " / ")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/\*\*([^*]*)\*\*/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
 }
 
 function displayTitle(kind, slug, notesTitle, htmlTitle) {
@@ -246,6 +252,11 @@ function renderGallery(published) {
 body{margin:0;background:var(--ground);color:var(--text);font-family:var(--body);
   font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1040px;margin:0 auto;padding:var(--pad)}
+.brand{display:inline-block;margin-bottom:28px;font-family:var(--display);font-size:19px;
+  font-weight:600;color:var(--text);text-decoration:none}
+.brand:hover{color:var(--accent)}
+.brand:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.brand .dot{color:var(--accent)}
 header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40px}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent);margin:0 0 12px}
@@ -273,6 +284,7 @@ a.home{color:var(--accent)}
 </head>
 <body>
 <div class="wrap">
+  <a class="brand" href="/">Austin Mander<span class="dot">.</span></a>
   <header>
     <p class="eyebrow">Craft ledger</p>
     <h1>Studies</h1>
