@@ -292,6 +292,13 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     return state.tieup[state.treadling[pick]].indexOf(state.threading[end]) !== -1;
   }
 
+  /* Draft convention, not arbitrary: end 1 sits at the RIGHT and shaft 1 is the
+     BOTTOM row of the threading band, with the tie-up sharing that shaft axis.
+     Everything that touches a screen position goes through these two, so the
+     model stays in weaving order and only the rendering is flipped. */
+  function colForEnd(end) { return ENDS - 1 - end; }
+  function rowForShaft(shaft) { return SHAFTS - 1 - shaft; }
+
   /* ---- DOM plumbing ----------------------------------------------------- */
   var el = function (id) { return document.getElementById(id); };
   var threadingEl = el("threading"), tieupEl = el("tieup"), treadlingEl = el("treadling"),
@@ -340,12 +347,14 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   function paintThreading() {
     for (var e = 0; e < ENDS; e++)
       for (var s = 0; s < SHAFTS; s++)
-        cellAt(threadingEl, s, e).dataset.on = state.threading[e] === s ? "1" : "0";
+        cellAt(threadingEl, rowForShaft(s), colForEnd(e)).dataset.on =
+          state.threading[e] === s ? "1" : "0";
   }
   function paintTieup() {
     for (var t = 0; t < TREADLES; t++)
       for (var s = 0; s < SHAFTS; s++)
-        cellAt(tieupEl, s, t).dataset.on = state.tieup[t].indexOf(s) !== -1 ? "1" : "0";
+        cellAt(tieupEl, rowForShaft(s), t).dataset.on =
+          state.tieup[t].indexOf(s) !== -1 ? "1" : "0";
   }
   function paintTreadling() {
     for (var p = 0; p < PICKS; p++)
@@ -354,7 +363,8 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   }
   function paintSwatches() {
     var i;
-    for (i = 0; i < ENDS; i++) warpcolEl.children[i].style.background = state.warp[i];
+    for (i = 0; i < ENDS; i++)
+      warpcolEl.children[colForEnd(i)].style.background = state.warp[i];
     for (i = 0; i < PICKS; i++) weftcolEl.children[i].style.background = state.weft[i];
   }
 
@@ -379,7 +389,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     for (var p = 0; p < Math.min(revealed, PICKS); p++) {
       for (var e = 0; e < ENDS; e++) {
         var up = warpIsUp(p, e);
-        var x = e * PITCH, y = p * PITCH;
+        var x = colForEnd(e) * PITCH, y = p * PITCH;
         ctx.fillStyle = up ? state.warp[e] : state.weft[p];
         ctx.fillRect(x, y, PITCH, PITCH);
         // A thread is round. One lit edge, one shaded, across its own width, so
@@ -397,7 +407,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     var t = state.trace;
     ctx.strokeStyle = "#c05a3a";
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(t.end * PITCH + .75, t.pick * PITCH + .75, PITCH - 1.5, PITCH - 1.5);
+    ctx.strokeRect(colForEnd(t.end) * PITCH + .75, t.pick * PITCH + .75, PITCH - 1.5, PITCH - 1.5);
   }
 
   /* ---- provenance ------------------------------------------------------- */
@@ -428,8 +438,8 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     var treadle = state.treadling[pick];
     var up = warpIsUp(pick, end);
 
-    cellAt(threadingEl, shaft, end).dataset.trace = "1";
-    cellAt(tieupEl, shaft, treadle).dataset.trace = "1";
+    cellAt(threadingEl, rowForShaft(shaft), colForEnd(end)).dataset.trace = "1";
+    cellAt(tieupEl, rowForShaft(shaft), treadle).dataset.trace = "1";
     cellAt(treadlingEl, pick, treadle).dataset.trace = "1";
 
     // Guides: from the threading cell down, and from the treadling cell across,
@@ -437,7 +447,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     // line lands on the cell it is pointing at.
     var cr = canvas.getBoundingClientRect(), dr = document.getElementById("draft").getBoundingClientRect();
     var ox = cr.left - dr.left, oy = cr.top - dr.top;
-    var cx = ox + end * PITCH + PITCH / 2, cy = oy + pick * PITCH + PITCH / 2;
+    var cx = ox + colForEnd(end) * PITCH + PITCH / 2, cy = oy + pick * PITCH + PITCH / 2;
     var tr = threadingEl.getBoundingClientRect(), tl = treadlingEl.getBoundingClientRect();
     g1.setAttribute("x1", cx); g1.setAttribute("y1", cy);
     g1.setAttribute("x2", cx); g1.setAttribute("y2", tr.bottom - dr.top);
@@ -459,7 +469,8 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
 
   function traceFromEvent(ev) {
     var r = canvas.getBoundingClientRect();
-    setTrace(Math.floor((ev.clientY - r.top) / PITCH), Math.floor((ev.clientX - r.left) / PITCH));
+    setTrace(Math.floor((ev.clientY - r.top) / PITCH),
+             ENDS - 1 - Math.floor((ev.clientX - r.left) / PITCH));
   }
 
   /* ---- editing ---------------------------------------------------------- */
@@ -528,7 +539,9 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     for (var i = 0; i < n; i++) {
       var b = document.createElement("button");
       b.type = "button"; b.className = "sw"; b.dataset.i = i;
-      b.setAttribute("aria-label", (which === "warp" ? "Warp end " : "Weft pick ") + (i + 1) + " colour");
+      b.setAttribute("aria-label", which === "warp"
+        ? "Warp end " + (n - i) + " colour"
+        : "Weft pick " + (i + 1) + " colour");
       host.appendChild(b);
     }
     var painting = false;
@@ -548,7 +561,9 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     });
   }
   function applyDye(which, i) {
-    (which === "warp" ? state.warp : state.weft)[i] = state.dye;
+    // The warp bar is drawn in draft order, so its DOM index is a screen column.
+    if (which === "warp") state.warp[ENDS - 1 - i] = state.dye;
+    else state.weft[i] = state.dye;
     paintSwatches(); drawCloth();
   }
 
@@ -579,18 +594,20 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   }
 
   /* ---- build ------------------------------------------------------------ */
-  buildGrid(threadingEl, SHAFTS, ENDS, function (s, e) {
-    return "End " + (e + 1) + ", shaft " + (s + 1); });
-  buildGrid(tieupEl, SHAFTS, TREADLES, function (s, t) {
-    return "Treadle " + (t + 1) + ", shaft " + (s + 1); });
+  // Labels name the weaving entity, not the screen slot.
+  buildGrid(threadingEl, SHAFTS, ENDS, function (r, c) {
+    return "End " + (ENDS - c) + ", shaft " + (SHAFTS - r); });
+  buildGrid(tieupEl, SHAFTS, TREADLES, function (r, c) {
+    return "Treadle " + (c + 1) + ", shaft " + (SHAFTS - r); });
   buildGrid(treadlingEl, PICKS, TREADLES, function (p, t) {
     return "Pick " + (p + 1) + ", treadle " + (t + 1); });
   buildSwatches(warpcolEl, ENDS, "warp");
   buildSwatches(weftcolEl, PICKS, "weft");
   measure();   // only meaningful once the tables exist on the page
 
-  wireGrid(threadingEl, function (r, c) { editThreading(r, c); });
-  wireGrid(tieupEl, function (r, c) { editTieup(r, c); });
+  // Grid callbacks arrive in screen coordinates; convert back to weaving order.
+  wireGrid(threadingEl, function (r, c) { editThreading(SHAFTS - 1 - r, ENDS - 1 - c); });
+  wireGrid(tieupEl, function (r, c) { editTieup(SHAFTS - 1 - r, c); });
   wireGrid(treadlingEl, function (r, c) { editTreadling(r, c); });
 
   STRUCTURES.forEach(function (s, i) {
@@ -658,10 +675,12 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   canvas.tabIndex = 0;
   canvas.addEventListener("keydown", function (ev) {
     var t = state.trace || { pick: 0, end: 0 }, used = true;
+    // Arrows follow the screen, not the index. Ends run right to left, so
+    // ArrowLeft moves to the next end along.
     if (ev.key === "ArrowUp") setTrace(t.pick - 1, t.end);
     else if (ev.key === "ArrowDown") setTrace(t.pick + 1, t.end);
-    else if (ev.key === "ArrowLeft") setTrace(t.pick, t.end - 1);
-    else if (ev.key === "ArrowRight") setTrace(t.pick, t.end + 1);
+    else if (ev.key === "ArrowLeft") setTrace(t.pick, t.end + 1);
+    else if (ev.key === "ArrowRight") setTrace(t.pick, t.end - 1);
     else used = false;
     if (used) ev.preventDefault();
   });
