@@ -34,8 +34,17 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
 .mast__thesis b{color:var(--text);font-weight:500}
 
 /* Draft ------------------------------------------------------------------- */
+/* On a phone the draft's cells are about 8px, far too small to tap, and the
+   tie-up and treadling sit off-screen inside the scroller. So the order flips:
+   the controls come first and become the interaction, the draft below is
+   something you read and scroll rather than edit. Changing a structure and
+   watching the cloth rewrite is the part that survives a small screen. */
 .bench{display:grid;gap:var(--gap);grid-template-columns:1fr;align-items:start}
-@media (min-width:1000px){.bench{grid-template-columns:auto 1fr}}
+.bench > .panel{order:-1}
+@media (min-width:1000px){
+  .bench{grid-template-columns:auto 1fr}
+  .bench > .panel{order:0}
+}
 /* The draft is one indivisible object at a fixed pitch, so on a narrow screen it
    scrolls inside its own frame rather than making the whole page scroll sideways
    or forcing the cells below a usable size. */
@@ -129,6 +138,13 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
 .vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
   clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
+/* Touch targets. The draft's cells cannot reasonably be finger-sized, but the
+   controls are the interaction on a phone, so they get the full 44px. */
+@media (max-width:700px){
+  .btn{min-height:44px;padding:10px 14px;display:inline-flex;align-items:center;font-size:12px}
+  .dye{width:44px;height:44px}
+  .speed input{min-height:44px}
+}
 @media (prefers-reduced-motion:reduce){.btn{transition:none}}
 </style>
 </head>
@@ -253,7 +269,11 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
    * is the entire simulation.
    * ---------------------------------------------------------------------- */
 
-  var SHAFTS = 8, TREADLES = 8, ENDS = 48, PICKS = 48;
+  // A narrow screen gets a narrower warp. At 48 ends the draft is wider than a
+  // phone and the tie-up and treadling end up off-screen inside the scroller;
+  // at 32 the whole instrument fits, which matters more than cloth area.
+  var NARROW = window.matchMedia("(max-width: 700px)").matches;
+  var SHAFTS = 8, TREADLES = 8, ENDS = NARROW ? 32 : 48, PICKS = NARROW ? 32 : 48;
 
   var INDIGO = "#2f4f8f", ECRU = "#ded5c0", MADDER = "#a8412a",
       SLATE = "#43505e", BONE = "#efe9dc", INK = "#1b2029", OCHRE = "#c08a2e";
