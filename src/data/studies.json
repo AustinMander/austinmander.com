@@ -104,7 +104,7 @@
       "title": "Loom",
       "intent": "A working eight shaft loom in a single page. Three small tables describe how the warp is threaded, what each treadle lifts, and which treadle is pressed for each pass of the shuttle. The cloth in the middle is not drawn, it is derived from those tables on every edit. The point of building it is the property that falls out for free: every crossing in the fabric is the result of exactly one comparison, so you can point at any single thread and recover the three decisions that produced it. Hovering the cloth names them.",
       "href": "/studies/loom",
-      "bytes": 38248,
+      "bytes": 44935,
       "assets": [],
       "allowances": []
     },

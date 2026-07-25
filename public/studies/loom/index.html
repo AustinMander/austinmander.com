@@ -206,6 +206,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
         <div class="row">
           <button class="btn" type="button" id="run" aria-pressed="false">Run the loom</button>
           <button class="btn" type="button" id="reweave">New draft</button>
+          <button class="btn" type="button" id="share">Copy link</button>
           <button class="btn" type="button" id="save">Save cloth</button>
         </div>
         <label class="speed" for="speed">
@@ -593,6 +594,12 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
         : "Weft pick " + (i + 1) + " colour");
       host.appendChild(b);
     }
+    // Listeners live on the host and survive a rebuild of its children, so they
+    // are attached exactly once. Without this, opening a shared link would bind
+    // a second set and every dab of dye would fire twice.
+    if (host.dataset.wired === "1") return;
+    host.dataset.wired = "1";
+
     var painting = false;
     host.addEventListener("pointerdown", function (ev) {
       var s = ev.target.closest(".sw"); if (!s) return;
@@ -614,6 +621,115 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     if (which === "warp") state.warp[ENDS - 1 - i] = state.dye;
     else state.weft[i] = state.dye;
     paintSwatches(); drawCloth();
+  }
+
+  /* ---- shareable drafts -------------------------------------------------- *
+   * The whole draft is small enough to live in the URL, so a cloth someone
+   * makes is a link they can send. Nothing is stored and nothing is uploaded;
+   * the fabric travels in the address bar.
+   *
+   * Layout, bit-packed then base64url'd:
+   *   8  version
+   *   8  ends      8 picks      4 shafts    4 treadles
+   *   3 bits per end   threading, shaft index
+   *   1 bit  per cell  tie-up, treadles x shafts
+   *   3 bits per pick  treadling, treadle index
+   *   3 bits per end   warp colour, palette index
+   *   3 bits per pick  weft colour, palette index
+   * A 48 x 48 draft lands around 110 characters.
+   * ---------------------------------------------------------------------- */
+  var SHARE_VERSION = 1;
+
+  function BitWriter() { this.bytes = []; this.acc = 0; this.n = 0; }
+  BitWriter.prototype.push = function (value, width) {
+    for (var i = width - 1; i >= 0; i--) {
+      this.acc = (this.acc << 1) | ((value >> i) & 1);
+      if (++this.n === 8) { this.bytes.push(this.acc); this.acc = 0; this.n = 0; }
+    }
+  };
+  BitWriter.prototype.done = function () {
+    if (this.n) this.bytes.push(this.acc << (8 - this.n));
+    return this.bytes;
+  };
+
+  function BitReader(bytes) { this.b = bytes; this.i = 0; this.n = 0; }
+  BitReader.prototype.read = function (width) {
+    var v = 0;
+    for (var k = 0; k < width; k++) {
+      var byte = this.b[this.i] || 0;
+      v = (v << 1) | ((byte >> (7 - this.n)) & 1);
+      if (++this.n === 8) { this.n = 0; this.i++; }
+    }
+    return v;
+  };
+
+  function toBase64Url(bytes) {
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function fromBase64Url(str) {
+    var s = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    var bin = atob(s), out = [];
+    for (var i = 0; i < bin.length; i++) out.push(bin.charCodeAt(i));
+    return out;
+  }
+
+  function dyeIndex(colour) {
+    var i = DYES.indexOf(colour);
+    return i === -1 ? 0 : i;
+  }
+
+  function encodeDraft() {
+    var w = new BitWriter(), i, s;
+    w.push(SHARE_VERSION, 8);
+    w.push(ENDS, 8); w.push(PICKS, 8); w.push(SHAFTS, 4); w.push(TREADLES, 4);
+    for (i = 0; i < ENDS; i++) w.push(state.threading[i], 3);
+    for (i = 0; i < TREADLES; i++)
+      for (s = 0; s < SHAFTS; s++) w.push(state.tieup[i].indexOf(s) !== -1 ? 1 : 0, 1);
+    for (i = 0; i < PICKS; i++) w.push(state.treadling[i], 3);
+    for (i = 0; i < ENDS; i++) w.push(dyeIndex(state.warp[i]), 3);
+    for (i = 0; i < PICKS; i++) w.push(dyeIndex(state.weft[i]), 3);
+    return toBase64Url(w.done());
+  }
+
+  // Everything here is attacker-supplied, so every value is clamped to a legal
+  // range and the whole thing is wrapped. A malformed link loads the default
+  // draft rather than throwing and leaving a blank page.
+  function decodeDraft(code) {
+    try {
+      var r = new BitReader(fromBase64Url(code));
+      if (r.read(8) !== SHARE_VERSION) return false;
+      var ends = r.read(8), picks = r.read(8), shafts = r.read(4), treadles = r.read(4);
+      if (ends < 2 || ends > 128 || picks < 2 || picks > 128) return false;
+      if (shafts < 2 || shafts > 8 || treadles < 2 || treadles > 8) return false;
+
+      var threading = [], tieup = [], treadling = [], warp = [], weft = [], i, s, lifted;
+      for (i = 0; i < ends; i++) threading.push(Math.min(r.read(3), shafts - 1));
+      for (i = 0; i < treadles; i++) {
+        lifted = [];
+        for (s = 0; s < shafts; s++) if (r.read(1)) lifted.push(s);
+        tieup.push(lifted);
+      }
+      for (i = 0; i < picks; i++) treadling.push(Math.min(r.read(3), treadles - 1));
+      for (i = 0; i < ends; i++) warp.push(DYES[Math.min(r.read(3), DYES.length - 1)]);
+      for (i = 0; i < picks; i++) weft.push(DYES[Math.min(r.read(3), DYES.length - 1)]);
+
+      ENDS = ends; PICKS = picks; SHAFTS = shafts; TREADLES = treadles;
+      buildTables();
+      state.threading = threading; state.tieup = tieup; state.treadling = treadling;
+      state.warp = warp; state.weft = weft;
+      paintThreading(); paintTieup(); paintTreadling(); paintSwatches();
+      revealed = PICKS; clearTrace(); drawCloth();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function shareLink() {
+    return location.origin + location.pathname + "#d=" + encodeDraft();
   }
 
   /* ---- presets ---------------------------------------------------------- */
@@ -737,17 +853,25 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     }
   }
 
-  /* ---- build ------------------------------------------------------------ */
-  // Labels name the weaving entity, not the screen slot.
-  buildGrid(threadingEl, SHAFTS, ENDS, function (r, c) {
-    return "End " + (ENDS - c) + ", shaft " + (SHAFTS - r); });
-  buildGrid(tieupEl, SHAFTS, TREADLES, function (r, c) {
-    return "Treadle " + (c + 1) + ", shaft " + (SHAFTS - r); });
-  buildGrid(treadlingEl, PICKS, TREADLES, function (p, t) {
-    return "Pick " + (p + 1) + ", treadle " + (t + 1); });
-  buildSwatches(warpcolEl, ENDS, "warp");
-  buildSwatches(weftcolEl, PICKS, "weft");
-  measure();   // only meaningful once the tables exist on the page
+  /* ---- build ------------------------------------------------------------ *
+   * Kept as a function because a shared link carries its own warp width. A
+   * draft made on a desktop is 48 ends wide; opening it on a phone has to
+   * rebuild the tables at that size rather than quietly truncate someone's
+   * cloth to 32 and hand them a different fabric than the one they were sent.
+   * ---------------------------------------------------------------------- */
+  function buildTables() {
+    // Labels name the weaving entity, not the screen slot.
+    buildGrid(threadingEl, SHAFTS, ENDS, function (r, c) {
+      return "End " + (ENDS - c) + ", shaft " + (SHAFTS - r); });
+    buildGrid(tieupEl, SHAFTS, TREADLES, function (r, c) {
+      return "Treadle " + (c + 1) + ", shaft " + (SHAFTS - r); });
+    buildGrid(treadlingEl, PICKS, TREADLES, function (p, t) {
+      return "Pick " + (p + 1) + ", treadle " + (t + 1); });
+    buildSwatches(warpcolEl, ENDS, "warp");
+    buildSwatches(weftcolEl, PICKS, "weft");
+    measure();   // only meaningful once the tables exist on the page
+  }
+  buildTables();
 
   // Grid callbacks arrive in screen coordinates; convert back to weaving order.
   wireGrid(threadingEl, function (r, c) { editThreading(SHAFTS - 1 - r, ENDS - 1 - c); });
@@ -800,6 +924,26 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     this.textContent = "Switch to " + (state.target === "warp" ? "weft" : "warp");
   });
 
+  el("share").addEventListener("click", function () {
+    var url = shareLink(), btn = this;
+    var settle = function (msg) {
+      btn.textContent = msg;
+      announce(msg === "Link copied" ? "Link to this draft copied" : msg);
+      setTimeout(function () { btn.textContent = "Copy link"; }, 2000);
+    };
+    // Clipboard access can be refused; fall back to putting the link in the
+    // address bar so it is still selectable rather than silently doing nothing.
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        function () { settle("Link copied"); },
+        function () { location.hash = "d=" + encodeDraft(); settle("Link in address bar"); }
+      );
+    } else {
+      location.hash = "d=" + encodeDraft();
+      settle("Link in address bar");
+    }
+  });
+
   el("run").addEventListener("click", function () { setRunning(!loom.running); });
   el("speed").addEventListener("input", function () { loom.pace = Number(this.value); });
 
@@ -835,8 +979,20 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
 
   window.addEventListener("resize", function () { measure(); drawCloth(); clearTrace(); });
 
-  applyStructure(STRUCTURES[1]);
-  applyColourway(COLOURWAYS[0]);
+  // A shared draft wins over the defaults. If the link is malformed the default
+  // cloth loads instead, so a bad link is never a blank page.
+  var shared = /(?:^|[#&])d=([A-Za-z0-9_-]+)/.exec(location.hash);
+  if (!(shared && decodeDraft(shared[1]))) {
+    applyStructure(STRUCTURES[1]);
+    applyColourway(COLOURWAYS[0]);
+  } else {
+    // The loaded cloth may match no preset, so nothing is shown as selected.
+    Array.prototype.forEach.call(
+      document.querySelectorAll("#structures .btn, #colourways .btn"),
+      function (n) { n.setAttribute("aria-pressed", "false"); }
+    );
+    announce("Loaded a shared draft");
+  }
   moveCursor(threadingEl, 0, 0); moveCursor(tieupEl, 0, 0); moveCursor(treadlingEl, 0, 0);
 })();
 </script>
