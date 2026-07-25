@@ -4,6 +4,32 @@ const HEIGHT = 1200;
 const COLUMN_X = { evening: 330, late: 880, overnight: 1320, morning: 1760 };
 const GRID_X = [430, 880, 1320, 1760, 2200];
 
+// The axis used to be hardcoded to day two, labels AND date, so every later day
+// rendered under day two's clock and printed "22 JUL". It is declared per day
+// now. The defaults are day two's exact values, so the approved day-one and
+// day-two ledgers are unchanged.
+//
+// Column keys stay pure layout ordinals, as the schema has always said. A day
+// whose work did not happen overnight relabels them rather than filing itself
+// under a time it did not run.
+const AXIS_LABEL_X = { evening: 430, late: 880, overnight: 1320, morning: 1760 };
+const AXIS_DEFAULT = {
+  note: 'APPROXIMATE CLOCK →',
+  date: '22 JUL',
+  columns: { evening: 'EVENING', late: 'LATE', overnight: 'OVERNIGHT', morning: 'MORNING' },
+};
+
+function axisMarkup(data) {
+  const axis = data.axis || {};
+  const columns = axis.columns || AXIS_DEFAULT.columns;
+  const stamp = axis.date || AXIS_DEFAULT.date;
+  const labels = Object.keys(AXIS_LABEL_X)
+    .map(key => `<text x="${AXIS_LABEL_X[key]}" y="327" class="axis soft" text-anchor="middle">${escapeText(columns[key] || '')}</text>`)
+    .join('\n    ');
+  return `${labels}
+    <text x="2200" y="327" class="axis soft" text-anchor="middle">${escapeText(stamp)}</text>`;
+}
+
 const frame = document.getElementById('frame');
 const tooltip = document.getElementById('tooltip');
 const exportButton = document.getElementById('export');
@@ -72,7 +98,12 @@ function lanePositions(data, trainingBars) {
   return data.lanes.map((_, index) => Math.round(top + step * index));
 }
 
-function labelAbove(laneId, runIndex) {
+function labelAbove(laneId, runIndex, isBottomLane) {
+  // The bottom lane sits on the frame floor at y=959, so anything labelled below
+  // it lands on the gate register. Those stay above whatever the alternating
+  // rhythm says. Neither approved day is affected: motion-lab, the only lane
+  // that starts below, is index 1 on both.
+  if (isBottomLane) return true;
   const startsBelow = laneId === 'motion-lab';
   return startsBelow ? runIndex % 2 === 1 : runIndex % 2 === 0;
 }
@@ -224,7 +255,7 @@ function buildSvg(data, days) {
     const runIndex = runIndexByLane.get(run.lane) || 0;
     const x = slotX(run.slot);
     const y = laneY[run.lane];
-    runGroups.push(runMarkup(run, x, y, labelAbove(run.lane, runIndex), laneIndex === 0));
+    runGroups.push(runMarkup(run, x, y, labelAbove(run.lane, runIndex, laneIndex === data.lanes.length - 1), laneIndex === 0));
     annotations.push(annotationMarkup(run, x, y));
     runIndexByLane.set(run.lane, runIndex + 1);
   });
@@ -265,14 +296,10 @@ function buildSvg(data, days) {
     <text x="2025" y="168" class="deck ink">approximate.</text>
 
     <text x="330" y="292" class="axis soft">WORKSTREAM / RUN</text>
-    <text x="2250" y="292" class="axis soft" text-anchor="end">APPROXIMATE CLOCK →</text>
+    <text x="2250" y="292" class="axis soft" text-anchor="end">${escapeText((data.axis && data.axis.note) || AXIS_DEFAULT.note)}</text>
     <path d="M330 306H2250" class="rule"/>
     <path d="${GRID_X.map(x => `M${x} 306V982`).join('')}" class="grid"/>
-    <text x="430" y="327" class="axis soft" text-anchor="middle">EVENING</text>
-    <text x="880" y="327" class="axis soft" text-anchor="middle">LATE</text>
-    <text x="1320" y="327" class="axis soft" text-anchor="middle">OVERNIGHT</text>
-    <text x="1760" y="327" class="axis soft" text-anchor="middle">MORNING</text>
-    <text x="2200" y="327" class="axis soft" text-anchor="middle">22 JUL</text>
+    ${axisMarkup(data)}
 
     ${laneMarkup}
     ${runGroups.join('')}

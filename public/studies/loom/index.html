@@ -56,6 +56,10 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
 /* trace highlight */
 .cell[data-trace="1"]{background:var(--madder)}
 .cell[data-trace="1"][data-on="0"]{background:var(--madder-dim)}
+/* live highlight while the loom is running: the treadle in use and the shafts
+   it is lifting, so the cause is visible at the moment the cloth appears */
+.cell[data-live="1"]{background:var(--madder-dim)}
+.cell[data-live="1"][data-on="1"]{background:var(--madder)}
 
 .r-warpcol{grid-column:2;grid-row:1}
 .r-threading{grid-column:2;grid-row:2}
@@ -97,6 +101,10 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   flex-wrap:wrap;font-size:11px;color:var(--muted)}
 .pick b{color:var(--text);font-weight:500}
 .hint{margin:0;font-size:11px;color:var(--faint);line-height:1.5}
+.speed{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint)}
+.speed input{flex:1;accent-color:var(--madder);background:transparent}
+.speed input:focus-visible{outline:2px solid var(--madder);outline-offset:3px}
 
 /* Readout ----------------------------------------------------------------- */
 .readout{border:1px solid var(--line);background:var(--ground);padding:14px 16px;
@@ -180,9 +188,15 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
       <div class="field">
         <p class="legend">Loom</p>
         <div class="row">
-          <button class="btn" type="button" id="reweave">Throw the shuttle</button>
+          <button class="btn" type="button" id="run" aria-pressed="false">Run the loom</button>
+          <button class="btn" type="button" id="reweave">New draft</button>
           <button class="btn" type="button" id="save">Save cloth</button>
         </div>
+        <label class="speed" for="speed">
+          <span>ms / pick</span>
+          <input type="range" id="speed" min="20" max="260" step="10" value="70"
+                 aria-label="Weaving pace in milliseconds per pick. Higher is slower.">
+        </label>
       </div>
 
       <div class="readout" id="readout" aria-live="polite">
@@ -386,6 +400,19 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     ctx.fillStyle = "#0c0f14";
     ctx.fillRect(0, 0, w, h);
 
+    // The bare warp. Every thread is already on the loom, under tension, before
+    // a single pick is thrown. Woven picks paint over it, so what you watch is
+    // cloth forming on a warp that was always there rather than appearing from
+    // nothing.
+    if (revealed < PICKS) {
+      ctx.globalAlpha = 0.28;
+      for (var e0 = 0; e0 < ENDS; e0++) {
+        ctx.fillStyle = state.warp[e0];
+        ctx.fillRect(colForEnd(e0) * PITCH, 0, PITCH - 1, h);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     for (var p = 0; p < Math.min(revealed, PICKS); p++) {
       for (var e = 0; e < ENDS; e++) {
         var up = warpIsUp(p, e);
@@ -401,6 +428,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
       }
     }
     if (state.trace) markTrace();
+    drawShuttle();
   }
 
   function markTrace() {
@@ -468,6 +496,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   }
 
   function traceFromEvent(ev) {
+    if (loom.running) return;   // the cloth is moving; a trace would chase it
     var r = canvas.getBoundingClientRect();
     setTrace(Math.floor((ev.clientY - r.top) / PITCH),
              ENDS - 1 - Math.floor((ev.clientX - r.left) / PITCH));
@@ -582,6 +611,7 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   }
 
   function weaveIn() {
+    if (loom.running) { revealed = 0; loom.phase = 0; return; }
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) { revealed = PICKS; drawCloth(); return; }
     revealed = 0;
@@ -591,6 +621,100 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
       if (revealed < PICKS) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
+  }
+
+  /* ---- running the loom -------------------------------------------------- *
+   * One pick per interval: lift the shafts the treadle is tied to, throw the
+   * shuttle across, lay the weft, advance. The treadling cell and the tie-up
+   * cells light up while that pick is being woven, so the cause is visible at
+   * the moment its row of cloth appears.
+   * ---------------------------------------------------------------------- */
+  var loom = { running: false, frame: 0, last: 0, phase: 0, pace: 70 };
+
+  function highlightLive(pick) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-live="1"]'),
+      function (n) { n.removeAttribute("data-live"); });
+    if (!loom.running || pick < 0 || pick >= PICKS) return;
+    var treadle = state.treadling[pick], s;
+    cellAt(treadlingEl, pick, treadle).dataset.live = "1";
+    for (s = 0; s < SHAFTS; s++) {
+      if (state.tieup[treadle].indexOf(s) !== -1) {
+        cellAt(tieupEl, rowForShaft(s), treadle).dataset.live = "1";
+      }
+    }
+  }
+
+  function drawShuttle() {
+    if (!loom.running || revealed >= PICKS) return;
+    var w = ENDS * PITCH, y = revealed * PITCH + PITCH / 2;
+    // Alternate direction each pick, the way a shuttle actually returns.
+    var dir = revealed % 2 === 0 ? 1 : -1;
+    var x = dir > 0 ? loom.phase * w : (1 - loom.phase) * w;
+    var len = Math.max(20, PITCH * 3.4), h = Math.max(6, PITCH * 0.9);
+
+    // The fell: the line of cloth being made right now.
+    ctx.fillStyle = "rgba(192,90,58,.22)";
+    ctx.fillRect(0, revealed * PITCH, w, PITCH);
+
+    // The weft trailing behind the shuttle.
+    ctx.strokeStyle = state.weft[revealed];
+    ctx.lineWidth = Math.max(2, PITCH * 0.6);
+    ctx.beginPath();
+    ctx.moveTo(dir > 0 ? 0 : w, y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    // The shuttle: a boat, pointed at both ends.
+    ctx.beginPath();
+    ctx.moveTo(x - len / 2, y);
+    ctx.lineTo(x - len / 6, y - h / 2);
+    ctx.lineTo(x + len / 6, y - h / 2);
+    ctx.lineTo(x + len / 2, y);
+    ctx.lineTo(x + len / 6, y + h / 2);
+    ctx.lineTo(x - len / 6, y + h / 2);
+    ctx.closePath();
+    ctx.fillStyle = "#e9e5db";
+    ctx.fill();
+    ctx.strokeStyle = "#101319";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function loop(now) {
+    if (!loom.running) return;
+    if (!loom.last) loom.last = now;
+    var dt = Math.min(now - loom.last, 160);   // clamp so a background tab does
+    loom.last = now;                           // not fast-forward the cloth
+    loom.phase += dt / loom.pace;
+    while (loom.phase >= 1) {
+      loom.phase -= 1;
+      revealed += 1;
+      if (revealed > PICKS) revealed = 0;      // reached the end, start again
+      highlightLive(revealed);
+    }
+    drawCloth();
+    loom.frame = requestAnimationFrame(loop);
+  }
+
+  function setRunning(on) {
+    loom.running = on;
+    var btn = el("run");
+    btn.setAttribute("aria-pressed", String(on));
+    btn.textContent = on ? "Stop the loom" : "Run the loom";
+    if (on) {
+      clearTrace();
+      loom.last = 0; loom.phase = 0;
+      if (revealed >= PICKS) revealed = 0;
+      highlightLive(revealed);
+      loom.frame = requestAnimationFrame(loop);
+      announce("The loom is running");
+    } else {
+      cancelAnimationFrame(loom.frame);
+      highlightLive(-1);
+      revealed = PICKS;                        // leave the cloth finished
+      drawCloth();
+      announce("The loom has stopped. The cloth is complete.");
+    }
   }
 
   /* ---- build ------------------------------------------------------------ */
@@ -655,6 +779,9 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     el("dyeTarget").textContent = state.target;
     this.textContent = "Switch to " + (state.target === "warp" ? "weft" : "warp");
   });
+
+  el("run").addEventListener("click", function () { setRunning(!loom.running); });
+  el("speed").addEventListener("input", function () { loom.pace = Number(this.value); });
 
   el("reweave").addEventListener("click", function () {
     var s = STRUCTURES[Math.floor(Math.random() * STRUCTURES.length)];
