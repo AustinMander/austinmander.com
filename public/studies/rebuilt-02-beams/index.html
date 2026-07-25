@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171a16">
+  <meta name="description" content="A dependency-free study of perimeter beams, tracing type, and a pointer-following spotlight.">
+  <title>Rebuilt 02: Beams and spotlight</title>
+  <style>
+    @property --spot-x {
+      syntax: "<percentage>";
+      inherits: true;
+      initial-value: 50%;
+    }
+
+    @property --spot-y {
+      syntax: "<percentage>";
+      inherits: true;
+      initial-value: 45%;
+    }
+
+    :root {
+      color-scheme: dark;
+      --ground: #171a16;
+      --ground-deep: #0f120e;
+      --surface: #22271f;
+      --surface-high: #293025;
+      --cream: #eff1da;
+      --cream-dim: #aeb59d;
+      --rule: #454c3f;
+      --signal: #b6e442;
+      --signal-hot: #ddff86;
+      --signal-ink: #18200d;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: "Avenir Next", Avenir, Futura, "Century Gothic", sans-serif;
+      --serif: "Iowan Old Style", Baskerville, "Times New Roman", serif;
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 20rem;
+      min-height: 100%;
+      background: var(--ground);
+    }
+
+    body {
+      min-height: 100dvh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 50% 44%, rgb(182 228 66 / .035), transparent 31rem),
+        linear-gradient(112deg, transparent 0 71%, rgb(239 241 218 / .018) 71% 71.1%, transparent 71.1%),
+        var(--ground);
+      color: var(--cream);
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-kerning: normal;
+      line-height: 1.5;
+    }
+
+    body::before {
+      position: fixed;
+      z-index: 20;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.46'/%3E%3C/svg%3E");
+      content: "";
+      mix-blend-mode: soft-light;
+      opacity: .045;
+      pointer-events: none;
+    }
+
+    ::selection {
+      background: var(--signal);
+      color: var(--signal-ink);
+    }
+
+    button { font: inherit; }
+
+    .skip-link {
+      position: fixed;
+      z-index: 30;
+      top: .75rem;
+      left: .75rem;
+      padding: .6rem .8rem;
+      background: var(--cream);
+      color: var(--ground);
+      font-family: var(--mono);
+      font-size: .7rem;
+      text-transform: uppercase;
+      transform: translateY(-180%);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .frame {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100dvh;
+      padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+    }
+
+    .masthead,
+    .footnote {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      font-family: var(--mono);
+      font-size: .64rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .12em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .masthead {
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .masthead p,
+    .footnote p { margin: 0; }
+
+    .series { color: var(--cream); }
+    .series b { color: var(--signal); font-weight: 700; }
+    .mode { color: var(--cream-dim); text-align: right; }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(17rem, .62fr);
+      gap: clamp(2.75rem, 6vw, 6.5rem);
+      align-items: center;
+      width: min(82rem, 100%);
+      margin: auto;
+      padding: clamp(2.5rem, 7vh, 6rem) 0;
+    }
+
+    .hero-stage {
+      min-width: 0;
+      container-type: inline-size;
+    }
+
+    .hero-card {
+      --spot-x: 50%;
+      --spot-y: 45%;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 5 / 3;
+      overflow: hidden;
+      border-radius: 3cqw;
+      background:
+        linear-gradient(145deg, rgb(255 255 235 / .045), transparent 24%),
+        linear-gradient(160deg, #262c22, #1c211a 58%, #171b16);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 235 / .12),
+        0 2.4rem 5rem rgb(0 0 0 / .34);
+      isolation: isolate;
+      touch-action: pan-y;
+    }
+
+    .hero-card::after {
+      position: absolute;
+      z-index: 8;
+      inset: 0;
+      border: 1px solid rgb(239 241 218 / .1);
+      border-radius: inherit;
+      box-shadow: inset 0 0 2.5rem rgb(182 228 66 / .018);
+      content: "";
+      pointer-events: none;
+    }
+
+    .grid,
+    .spotlight,
+    .corner-shade,
+    .beam-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .grid {
+      z-index: 1;
+      background-image:
+        linear-gradient(rgb(239 241 218 / .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(239 241 218 / .045) 1px, transparent 1px);
+      background-position: center;
+      background-size: clamp(1.8rem, 4cqw, 3rem) clamp(1.8rem, 4cqw, 3rem);
+      mask-image: linear-gradient(to right, #000 3%, #000 66%, transparent 98%);
+      opacity: .78;
+    }
+
+    .spotlight {
+      z-index: 2;
+      background:
+        radial-gradient(circle clamp(9rem, 27cqw, 20rem) at var(--spot-x) var(--spot-y), rgb(221 255 134 / .15), rgb(182 228 66 / .06) 34%, transparent 72%);
+      mix-blend-mode: screen;
+      transition: --spot-x 90ms var(--ease-out), --spot-y 90ms var(--ease-out);
+    }
+
+    .hero-card[data-tracking="true"] .spotlight {
+      transition-duration: 80ms;
+      transition-timing-function: linear;
+    }
+
+    .corner-shade {
+      z-index: 3;
+      background:
+        linear-gradient(90deg, transparent 50%, rgb(10 13 9 / .34)),
+        linear-gradient(0deg, rgb(10 13 9 / .24), transparent 30%);
+    }
+
+    .beam-svg {
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .beam-track {
+      fill: none;
+      stroke: rgb(239 241 218 / .13);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .beam-bloom,
+    .beam-halo,
+    .beam-core {
+      fill: none;
+      path-length: 1000;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+      animation: perimeter-run 9s linear infinite;
+    }
+
+    .beam-bloom {
+      stroke: rgb(182 228 66 / .3);
+      stroke-width: 18;
+      stroke-dasharray: 105 895;
+      filter: blur(10px);
+      opacity: .7;
+    }
+
+    .beam-halo {
+      stroke: rgb(182 228 66 / .58);
+      stroke-width: 7;
+      stroke-dasharray: 82 918;
+      filter: blur(3px);
+      opacity: .72;
+    }
+
+    .beam-core {
+      stroke: var(--signal-hot);
+      stroke-width: 2.2;
+      stroke-dasharray: 54 946;
+    }
+
+    .beam-secondary {
+      animation-delay: -4.5s;
+      opacity: .32;
+    }
+
+    @keyframes perimeter-run {
+      to { stroke-dashoffset: -1000; }
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 5;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+      padding: clamp(1.4rem, 4.4cqw, 3.25rem);
+    }
+
+    .card-topline,
+    .study-index {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      color: var(--cream-dim);
+      font-family: var(--mono);
+      font-size: clamp(.53rem, 1.2cqw, .68rem);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .12em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .card-topline::before {
+      width: clamp(1.5rem, 4cqw, 3rem);
+      height: 1px;
+      background: var(--signal);
+      content: "";
+      box-shadow: 0 0 .75rem rgb(182 228 66 / .5);
+    }
+
+    .card-topline span:first-of-type { margin-right: auto; }
+
+    .hero-copy {
+      align-self: center;
+      width: min(45rem, 88%);
+      margin-top: 1.2rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 clamp(.8rem, 2cqw, 1.35rem);
+      color: var(--signal);
+      font-family: var(--mono);
+      font-size: clamp(.55rem, 1.2cqw, .7rem);
+      letter-spacing: .15em;
+      line-height: 1.4;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: enter 620ms 100ms var(--ease-out) forwards;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(3.25rem, 10.4cqw, 7.6rem);
+      font-weight: 400;
+      letter-spacing: -.067em;
+      line-height: .8;
+      text-wrap: balance;
+    }
+
+    .headline-word {
+      display: block;
+      opacity: 0;
+      transform: translateY(.45em);
+      animation: enter 760ms var(--ease-out) forwards;
+    }
+
+    .headline-word:nth-child(1) { animation-delay: 160ms; }
+    .headline-word:nth-child(2) { animation-delay: 250ms; }
+
+    .glyph {
+      position: relative;
+      display: inline-block;
+    }
+
+    .glyph::after {
+      position: absolute;
+      inset: 0;
+      color: var(--signal-hot);
+      content: attr(data-char);
+      opacity: 0;
+      pointer-events: none;
+      text-shadow: 0 0 .24em rgb(182 228 66 / .36);
+      animation: glyph-sweep 6.8s calc(1.7s + var(--glyph) * 28ms) linear infinite;
+    }
+
+    @keyframes glyph-sweep {
+      0%, 4% { opacity: 0; }
+      7% { opacity: .48; }
+      11%, 100% { opacity: 0; }
+    }
+
+    .trace {
+      display: block;
+      width: min(100%, 34rem);
+      height: clamp(.65rem, 1.5cqw, 1rem);
+      margin-top: clamp(.5rem, 1.5cqw, 1rem);
+      overflow: visible;
+    }
+
+    .trace path {
+      fill: none;
+      stroke: var(--signal);
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      stroke-linecap: round;
+      stroke-width: 2.2;
+      vector-effect: non-scaling-stroke;
+      animation:
+        trace-in 1100ms 660ms var(--ease-out) forwards,
+        trace-breathe 5.5s 2s ease-in-out infinite;
+    }
+
+    @keyframes trace-in { to { stroke-dashoffset: 0; } }
+
+    @keyframes trace-breathe {
+      0%, 100% { opacity: .62; }
+      50% { opacity: 1; }
+    }
+
+    .descriptor {
+      width: min(31rem, 90%);
+      margin: clamp(.9rem, 2cqw, 1.35rem) 0 0;
+      color: var(--cream-dim);
+      font-family: var(--serif);
+      font-size: clamp(.9rem, 2.15cqw, 1.38rem);
+      letter-spacing: -.015em;
+      line-height: 1.35;
+      opacity: 0;
+      transform: translateY(.6rem);
+      animation: enter 650ms 430ms var(--ease-out) forwards;
+    }
+
+    @keyframes enter {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .study-index {
+      justify-content: flex-start;
+      padding-top: clamp(.8rem, 2cqw, 1.35rem);
+      border-top: 1px solid rgb(239 241 218 / .14);
+    }
+
+    .study-index span {
+      display: inline-flex;
+      gap: .45rem;
+      align-items: center;
+    }
+
+    .study-index span::before {
+      width: .3rem;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--rule);
+      content: "";
+    }
+
+    .study-index span:first-child::before {
+      background: var(--signal);
+      box-shadow: 0 0 0 .2rem rgb(182 228 66 / .1);
+    }
+
+    .coordinate {
+      margin-left: auto;
+      color: var(--cream);
+    }
+
+    .instrument {
+      position: relative;
+      align-self: center;
+      max-width: 26rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .instrument::before {
+      position: absolute;
+      top: -2px;
+      left: 0;
+      width: 3.25rem;
+      height: 3px;
+      background: var(--signal);
+      content: "";
+    }
+
+    .instrument-kicker {
+      margin: 0 0 1.35rem;
+      color: var(--cream-dim);
+      font-family: var(--mono);
+      font-size: .64rem;
+      letter-spacing: .13em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .receipt-copy {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(1.25rem, 2.3vw, 1.85rem);
+      letter-spacing: -.025em;
+      line-height: 1.25;
+    }
+
+    .receipt-copy .quiet { color: var(--cream-dim); }
+    .receipt-copy strong { color: var(--signal); font-weight: 400; }
+
+    .reading {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .75rem;
+      margin: 2.25rem 0 0;
+      padding: 1rem 0 0;
+      border-top: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: .61rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .08em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .reading div { display: grid; gap: .15rem; }
+    .reading dt { color: var(--cream-dim); }
+    .reading dd { margin: 0; color: var(--cream); }
+    .reading .good { color: var(--signal); }
+
+    .live-dot {
+      display: inline-block;
+      width: .42rem;
+      height: .42rem;
+      margin-right: .45rem;
+      border-radius: 50%;
+      background: var(--signal);
+      box-shadow: 0 0 0 .18rem rgb(182 228 66 / .1);
+    }
+
+    .annotation-toggle {
+      display: inline-flex;
+      gap: .6rem;
+      align-items: center;
+      min-height: 2.75rem;
+      margin-top: 1.8rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--cream-dim);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .61rem;
+      letter-spacing: .08em;
+      line-height: 2.75rem;
+      text-transform: uppercase;
+    }
+
+    .annotation-toggle kbd {
+      display: grid;
+      width: 1.75rem;
+      height: 1.75rem;
+      place-items: center;
+      border: 1px solid var(--rule);
+      background: var(--surface);
+      color: var(--cream);
+      font: inherit;
+      transition: border-color 160ms linear, color 160ms linear, transform 160ms var(--ease-out);
+    }
+
+    .annotation-toggle:hover kbd,
+    .annotation-toggle[aria-expanded="true"] kbd {
+      border-color: var(--signal);
+      color: var(--signal);
+      transform: translateY(-2px);
+    }
+
+    .annotation-toggle:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 4px;
+    }
+
+    .annotation {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 350ms var(--ease-out), opacity 220ms linear;
+    }
+
+    .annotation[data-open="true"] {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+
+    .annotation-inner { overflow: hidden; }
+
+    .annotation-body {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--rule);
+      color: var(--cream-dim);
+      font-family: var(--mono);
+      font-size: .67rem;
+      line-height: 1.65;
+    }
+
+    .annotation-body p { margin: 0; }
+    .annotation-body p + p { margin-top: .8rem; }
+    .annotation-body b { color: var(--cream); font-weight: 400; }
+
+    .footnote {
+      padding-top: 1rem;
+      border-top: 1px solid var(--rule);
+      color: var(--cream-dim);
+    }
+
+    @media (max-width: 58rem) {
+      .frame { min-height: auto; }
+
+      main {
+        grid-template-columns: 1fr;
+        gap: 3.5rem;
+        width: min(48rem, 100%);
+        padding: 3rem 0 4rem;
+      }
+
+      .instrument {
+        width: min(32rem, 100%);
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 35rem) {
+      .hero-card {
+        aspect-ratio: 4 / 5;
+        border-radius: 7cqw;
+      }
+
+      .card-content { padding: 1.5rem; }
+      .grid { mask-image: linear-gradient(to bottom, #000, #000 65%, transparent 100%); }
+      .hero-copy { width: 100%; margin-top: 0; }
+      h1 { font-size: clamp(3.25rem, 19cqw, 5.9rem); }
+      .descriptor { width: 100%; font-size: 1.08rem; }
+      .study-index span:nth-child(2) { display: none; }
+      .footnote p:last-child { display: none; }
+    }
+
+    @media (max-height: 45rem) and (min-width: 58.01rem) {
+      main { padding: 1.8rem 0; }
+      .hero-stage { max-width: 45rem; }
+      .receipt-copy { font-size: 1.22rem; }
+      .reading { margin-top: 1.2rem; }
+      .annotation-toggle { margin-top: .7rem; }
+    }
+
+    @media (pointer: coarse) {
+      .mode::after { content: " / touch held"; color: var(--signal); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .beam-bloom,
+      .beam-halo,
+      .beam-core,
+      .glyph::after,
+      .trace path,
+      .eyebrow,
+      .headline-word,
+      .descriptor {
+        animation: none !important;
+      }
+
+      .beam-bloom,
+      .beam-halo,
+      .beam-core {
+        stroke-dashoffset: -235;
+      }
+
+      .glyph::after { display: none; }
+
+      .trace path {
+        stroke-dashoffset: 0;
+        opacity: .82;
+      }
+
+      .eyebrow,
+      .headline-word,
+      .descriptor {
+        opacity: 1;
+        transform: none;
+      }
+
+      .spotlight {
+        --spot-x: 50% !important;
+        --spot-y: 45% !important;
+        transition: none !important;
+      }
+
+      .annotation,
+      .annotation-toggle kbd { transition: none; }
+
+      .mode::after { content: " / static"; color: var(--signal); }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to specimen</a>
+
+  <div class="frame">
+    <header class="masthead" aria-label="Study header">
+      <p class="series"><b>RB</b> / Rebuilt without the library</p>
+      <p class="mode">Specimen 02 / beam study</p>
+    </header>
+
+    <main id="main">
+      <section class="hero-stage" aria-label="Scroll Studies hero with an animated perimeter beam">
+        <div class="hero-card" data-tracking="false">
+          <div class="grid" aria-hidden="true"></div>
+          <div class="spotlight" aria-hidden="true"></div>
+          <div class="corner-shade" aria-hidden="true"></div>
+
+          <div class="card-content">
+            <div class="card-topline">
+              <span>Scroll Studies</span>
+              <span>SS / 01&ndash;08</span>
+            </div>
+
+            <div class="hero-copy">
+              <p class="eyebrow">A series of isolated motion systems</p>
+              <h1 aria-label="Scroll Studies">
+                <span class="headline-word">Scroll</span>
+                <span class="headline-word">Studies</span>
+              </h1>
+              <svg class="trace" viewBox="0 0 560 16" preserveAspectRatio="none" aria-hidden="true">
+                <path pathLength="1" d="M2 11 C92 8 144 14 232 9 S416 5 558 8"></path>
+              </svg>
+              <p class="descriptor">Scroll Studies &mdash; small motion systems, isolated and instrumented</p>
+            </div>
+
+            <div class="study-index" aria-label="Study categories">
+              <span>Pinning</span>
+              <span>Progress</span>
+              <span>Velocity</span>
+              <span class="coordinate" aria-hidden="true">X 50 / Y 45</span>
+            </div>
+          </div>
+
+          <svg class="beam-svg" viewBox="0 0 1200 720" preserveAspectRatio="none" aria-hidden="true">
+            <path class="beam-track" pathLength="1000" d="M38 2 H1162 A36 36 0 0 1 1198 38 V682 A36 36 0 0 1 1162 718 H38 A36 36 0 0 1 2 682 V38 A36 36 0 0 1 38 2 Z"></path>
+            <path class="beam-bloom" pathLength="1000" d="M38 2 H1162 A36 36 0 0 1 1198 38 V682 A36 36 0 0 1 1162 718 H38 A36 36 0 0 1 2 682 V38 A36 36 0 0 1 38 2 Z"></path>
+            <path class="beam-halo" pathLength="1000" d="M38 2 H1162 A36 36 0 0 1 1198 38 V682 A36 36 0 0 1 1162 718 H38 A36 36 0 0 1 2 682 V38 A36 36 0 0 1 38 2 Z"></path>
+            <path class="beam-core" pathLength="1000" d="M38 2 H1162 A36 36 0 0 1 1198 38 V682 A36 36 0 0 1 1162 718 H38 A36 36 0 0 1 2 682 V38 A36 36 0 0 1 38 2 Z"></path>
+            <path class="beam-bloom beam-secondary" pathLength="1000" d="M38 2 H1162 A36 36 0 0 1 1198 38 V682 A36 36 0 0 1 1162 718 H38 A36 36 0 0 1 2 682 V38 A36 36 0 0 1 38 2 Z"></path>
+          </svg>
+        </div>
+      </section>
+
+      <aside class="instrument" aria-labelledby="receipt-heading">
+        <p class="instrument-kicker" id="receipt-heading">Build receipt / live</p>
+        <p class="receipt-copy">
+          <span class="quiet">As commonly shipped by component kits:</span>
+          React + Tailwind + Framer Motion.<br><br>
+          <span class="quiet">This page:</span>
+          <strong>0 dependencies</strong>, <span id="line-count">measuring</span> lines,
+          <span id="byte-count">measuring</span> KB served, 60fps.
+        </p>
+
+        <dl class="reading" aria-label="Live build readings">
+          <div><dt>Network</dt><dd>1 file</dd></div>
+          <div><dt>Writes</dt><dd>2 vars</dd></div>
+          <div><dt>Status</dt><dd class="good"><span class="live-dot"></span>live</dd></div>
+        </dl>
+
+        <button class="annotation-toggle" type="button" aria-expanded="false" aria-controls="annotation">
+          <kbd aria-hidden="true">A</kbd><span>Show annotation</span>
+        </button>
+
+        <div class="annotation" id="annotation" data-open="false">
+          <div class="annotation-inner">
+            <div class="annotation-body">
+              <p><b>Perimeter math.</b> Every beam path is normalized to 1000 units with pathLength. A 54-unit core followed by a 946-unit gap advances from 0 to -1000, so one cycle is exactly one rounded-rectangle perimeter.</p>
+              <p><b>One-frame write.</b> Pointer and touch events only record the latest coordinates. One scheduled animation frame converts that point against a cached card rectangle, then writes --spot-x and --spot-y together. No layout read follows those writes.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footnote">
+      <p>Vanilla HTML / CSS / JavaScript</p>
+      <p>SVG path, pointer, touch, reduced motion</p>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const card = document.querySelector('.hero-card');
+      const coordinate = document.querySelector('.coordinate');
+      const heading = document.querySelector('h1');
+      const toggle = document.querySelector('.annotation-toggle');
+      const annotation = document.querySelector('.annotation');
+      const toggleLabel = toggle.querySelector('span');
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+      let cardRect = card.getBoundingClientRect();
+      let pendingPoint = null;
+      let spotlightFrame = 0;
+      let glyphIndex = 0;
+
+      heading.querySelectorAll('.headline-word').forEach(word => {
+        const text = word.textContent;
+        word.textContent = '';
+        [...text].forEach(character => {
+          const glyph = document.createElement('span');
+          glyph.className = 'glyph';
+          glyph.dataset.char = character;
+          glyph.style.setProperty('--glyph', glyphIndex++);
+          glyph.textContent = character;
+          word.append(glyph);
+        });
+      });
+
+      function measureCard() {
+        cardRect = card.getBoundingClientRect();
+      }
+
+      new ResizeObserver(measureCard).observe(card);
+
+      function commitSpotlight() {
+        spotlightFrame = 0;
+        if (!pendingPoint || reduced.matches) return;
+
+        const x = Math.min(1, Math.max(0, (pendingPoint.x - cardRect.left) / cardRect.width));
+        const y = Math.min(1, Math.max(0, (pendingPoint.y - cardRect.top) / cardRect.height));
+        const xPercent = (x * 100).toFixed(1);
+        const yPercent = (y * 100).toFixed(1);
+
+        card.style.setProperty('--spot-x', `${xPercent}%`);
+        card.style.setProperty('--spot-y', `${yPercent}%`);
+        coordinate.textContent = `X ${xPercent} / Y ${yPercent}`;
+      }
+
+      function queueSpotlight(clientX, clientY) {
+        if (reduced.matches) return;
+        pendingPoint = { x: clientX, y: clientY };
+        if (!spotlightFrame) spotlightFrame = requestAnimationFrame(commitSpotlight);
+      }
+
+      card.addEventListener('pointerenter', event => {
+        if (event.pointerType === 'touch' || reduced.matches) return;
+        measureCard();
+        card.dataset.tracking = 'true';
+        queueSpotlight(event.clientX, event.clientY);
+      });
+
+      card.addEventListener('pointermove', event => {
+        if (reduced.matches) return;
+        if (event.pointerType !== 'touch') card.dataset.tracking = 'true';
+        queueSpotlight(event.clientX, event.clientY);
+      }, { passive: true });
+
+      card.addEventListener('pointerleave', event => {
+        if (event.pointerType === 'touch' || reduced.matches) return;
+        card.dataset.tracking = 'false';
+        pendingPoint = {
+          x: cardRect.left + cardRect.width * .5,
+          y: cardRect.top + cardRect.height * .45
+        };
+        if (!spotlightFrame) spotlightFrame = requestAnimationFrame(commitSpotlight);
+      });
+
+      card.addEventListener('pointerdown', event => {
+        if (event.pointerType !== 'touch' || reduced.matches) return;
+        measureCard();
+        card.dataset.tracking = 'true';
+        queueSpotlight(event.clientX, event.clientY);
+      }, { passive: true });
+
+      card.addEventListener('pointerup', event => {
+        if (event.pointerType !== 'touch') return;
+        card.dataset.tracking = 'false';
+        queueSpotlight(event.clientX, event.clientY);
+      }, { passive: true });
+
+      card.addEventListener('pointercancel', () => {
+        card.dataset.tracking = 'false';
+      });
+
+      function setAnnotation(open) {
+        toggle.setAttribute('aria-expanded', String(open));
+        annotation.dataset.open = String(open);
+        toggleLabel.textContent = open ? 'Hide annotation' : 'Show annotation';
+      }
+
+      toggle.addEventListener('click', () => {
+        setAnnotation(toggle.getAttribute('aria-expanded') !== 'true');
+      });
+
+      addEventListener('keydown', event => {
+        if (event.key.toLowerCase() !== 'a' || event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        setAnnotation(toggle.getAttribute('aria-expanded') !== 'true');
+      });
+
+      reduced.addEventListener('change', event => {
+        if (!event.matches) return;
+        cancelAnimationFrame(spotlightFrame);
+        spotlightFrame = 0;
+        pendingPoint = null;
+        card.dataset.tracking = 'false';
+        card.style.setProperty('--spot-x', '50%');
+        card.style.setProperty('--spot-y', '45%');
+        coordinate.textContent = 'X 50 / Y 45';
+      });
+
+      fetch(location.href, { cache: 'no-store' })
+        .then(response => response.arrayBuffer())
+        .then(buffer => {
+          const source = new TextDecoder().decode(buffer);
+          const lines = source.split(/\r?\n/).length - (source.endsWith('\n') ? 1 : 0);
+          const kb = buffer.byteLength / 1024;
+          document.querySelector('#line-count').textContent = lines.toLocaleString();
+          document.querySelector('#byte-count').textContent = kb.toFixed(1);
+        })
+        .catch(() => {
+          document.querySelector('#line-count').textContent = 'n/a';
+          document.querySelector('#byte-count').textContent = 'n/a';
+        });
+    })();
+  </script>
+</body>
+</html>

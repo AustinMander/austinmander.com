@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071426">
+  <title>Study 07 / The autopilot</title>
+  <style>
+    :root {
+      --navy: #071426;
+      --navy-lift: #0c1b2e;
+      --cream: #f0e6d2;
+      --cream-dim: #a9a592;
+      --amber: #d79b42;
+      --line: rgba(240, 230, 210, .22);
+      --serif: "Baskerville", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      --sans: "Avenir Next Condensed", "Gill Sans", "Trebuchet MS", sans-serif;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    html { background: var(--navy); overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      background: var(--navy);
+      color: var(--cream);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      touch-action: none;
+      user-select: none;
+    }
+
+    button { color: inherit; font: inherit; }
+    canvas { display: block; }
+
+    .experience {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      contain: strict;
+      background:
+        radial-gradient(circle at 79% 17%, rgba(29, 49, 70, .38), transparent 35%),
+        var(--navy);
+    }
+
+    .experience::after {
+      content: "";
+      position: absolute;
+      z-index: 8;
+      inset: 0;
+      pointer-events: none;
+      opacity: .08;
+      background-image: repeating-radial-gradient(circle at 30% 20%, transparent 0 1px, rgba(240, 230, 210, .28) 1.4px 1.8px);
+      background-size: 5px 5px;
+      mix-blend-mode: soft-light;
+    }
+
+    .masthead {
+      position: fixed;
+      z-index: 20;
+      top: max(1rem, env(safe-area-inset-top));
+      left: clamp(1rem, 2.5vw, 2.8rem);
+      right: clamp(1rem, 2.5vw, 2.8rem);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: start;
+      padding-bottom: .85rem;
+      border-bottom: 1px solid var(--line);
+      font-size: clamp(.56rem, .58vw, .66rem);
+      font-weight: 650;
+      line-height: 1.25;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .masthead__center { justify-self: center; color: var(--cream-dim); }
+    .masthead__help { justify-self: end; color: var(--cream-dim); text-align: right; }
+
+    .progress-rail {
+      position: fixed;
+      z-index: 20;
+      top: 50%;
+      left: clamp(1rem, 2.5vw, 2.8rem);
+      width: 1px;
+      height: min(42vh, 22rem);
+      background: var(--line);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .progress-rail__fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 100%;
+      background: var(--amber);
+      transform: scaleY(var(--progress, 0));
+      transform-origin: top;
+    }
+
+    .progress-rail__marker {
+      position: absolute;
+      left: -3px;
+      top: calc(var(--progress, 0) * 100%);
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--amber);
+      border-radius: 50%;
+      background: var(--navy);
+      transform: translateY(-50%);
+    }
+
+    .segment {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: grid;
+      align-items: center;
+      padding: clamp(5.8rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8.5rem) clamp(12.5rem, 29vh, 17rem);
+      opacity: var(--opacity, 0);
+      transform: translate3d(0, var(--offset, 0), 0);
+      will-change: transform, opacity;
+      pointer-events: none;
+    }
+
+    .statement { grid-template-columns: minmax(0, 1fr) minmax(12rem, 24vw); gap: clamp(2rem, 6vw, 8rem); }
+    .statement__copy {
+      max-width: 11.3em;
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(3rem, 7.7vw, 8.8rem);
+      font-weight: 400;
+      line-height: .86;
+      letter-spacing: -.052em;
+    }
+
+    .statement__copy span { display: block; }
+    .statement__copy .amber { color: var(--amber); font-style: italic; }
+    .statement__aside {
+      align-self: end;
+      max-width: 17rem;
+      padding-top: .72rem;
+      border-top: 1px solid var(--amber);
+      color: var(--cream-dim);
+      font-size: clamp(.62rem, .68vw, .75rem);
+      line-height: 1.55;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .segment-index {
+      display: block;
+      margin-bottom: 1rem;
+      color: var(--amber);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .interlude {
+      grid-template-columns: minmax(13rem, 30vw) 1fr;
+      gap: clamp(2rem, 6vw, 7rem);
+    }
+
+    .interlude__copy { align-self: end; padding-bottom: clamp(1rem, 7vh, 5rem); }
+    .interlude__title {
+      margin: 0 0 1.2rem;
+      font-family: var(--serif);
+      font-size: clamp(2.5rem, 5vw, 5.6rem);
+      font-weight: 400;
+      line-height: .92;
+      letter-spacing: -.045em;
+    }
+
+    .interlude__note {
+      max-width: 20rem;
+      margin: 0;
+      color: var(--cream-dim);
+      font-size: clamp(.61rem, .68vw, .74rem);
+      line-height: 1.6;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      justify-self: end;
+      width: min(55vw, 48rem);
+      height: min(58vh, 37rem);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      contain: strict;
+    }
+
+    .canvas-wrap canvas { width: 100%; height: 100%; }
+    .canvas-caption {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: .9rem;
+      display: flex;
+      justify-content: space-between;
+      color: var(--cream-dim);
+      font-size: .58rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .instrument {
+      position: fixed;
+      z-index: 30;
+      right: max(1rem, env(safe-area-inset-right));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      width: min(24rem, calc(100vw - 2rem));
+      background: rgba(7, 20, 38, .94);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .16);
+      pointer-events: auto;
+    }
+
+    .instrument__head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      min-height: 3.25rem;
+      padding: .72rem .85rem .7rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .driver {
+      font-size: .67rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .driver::before {
+      content: "";
+      display: inline-block;
+      width: .48rem;
+      height: .48rem;
+      margin-right: .62rem;
+      border-radius: 50%;
+      background: var(--cream);
+      vertical-align: -.01rem;
+      transition: background-color 180ms var(--ease), box-shadow 180ms var(--ease);
+    }
+
+    body.is-autopilot .driver::before { background: var(--amber); box-shadow: 0 0 0 4px rgba(215, 155, 66, .12); }
+    body.is-recording .driver::before {
+      background: var(--amber);
+      box-shadow: 0 0 0 0 rgba(215, 155, 66, .34);
+      animation: record-pulse 1.15s var(--ease) infinite;
+    }
+
+    @keyframes record-pulse {
+      0%, 100% { opacity: .72; box-shadow: 0 0 0 0 rgba(215, 155, 66, .3); }
+      45% { opacity: 1; box-shadow: 0 0 0 5px rgba(215, 155, 66, .08); }
+    }
+    .engage {
+      border: 0;
+      border-bottom: 1px solid currentColor;
+      padding: .3rem 0 .22rem;
+      background: transparent;
+      color: var(--amber);
+      font-size: .58rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .engage:hover { color: var(--cream); transform: translateY(-1px); }
+    .engage:active { transform: translateY(1px); }
+    .engage:focus-visible { outline: 1px solid var(--amber); outline-offset: 5px; }
+
+    .instrument__readout {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .45rem 1rem;
+      padding: .8rem 1rem .75rem;
+      font-size: .61rem;
+      line-height: 1.35;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout-label { color: var(--cream-dim); }
+    .readout-value { text-align: right; }
+    .readout-value strong { color: var(--amber); font-weight: 700; }
+
+    .chart-wrap { position: relative; padding: .25rem .65rem .6rem; border-top: 1px solid var(--line); }
+    #velocity-chart { width: 100%; height: 5.2rem; }
+    .chart-key {
+      position: absolute;
+      top: .58rem;
+      left: 1rem;
+      display: flex;
+      gap: 1rem;
+      color: var(--cream-dim);
+      font-size: .52rem;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .chart-key span::before { content: ""; display: inline-block; width: .85rem; height: 1px; margin-right: .35rem; vertical-align: .2rem; background: var(--cream); }
+    .chart-key span:nth-child(2)::before { background: var(--amber); opacity: .62; }
+    .chart-key span:nth-child(3)::before {
+      height: 0;
+      background: transparent;
+      border-top: 1px dashed var(--cream-dim);
+      opacity: .72;
+    }
+
+    .takes-shelf {
+      position: fixed;
+      z-index: 30;
+      left: max(1rem, env(safe-area-inset-left));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      width: min(20rem, calc(100vw - 2rem));
+      max-height: min(45vh, 24rem);
+      overflow: hidden;
+      background: rgba(7, 20, 38, .94);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .12);
+      pointer-events: auto;
+    }
+
+    .takes-shelf__head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      min-height: 2.7rem;
+      padding: .62rem .75rem .58rem .85rem;
+      border-bottom: 1px solid var(--line);
+      font-size: .58rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .takes-shelf__list { max-height: min(36vh, 19rem); overflow: auto; }
+    .takes-empty {
+      margin: 0;
+      padding: .9rem .85rem;
+      color: var(--cream-dim);
+      font-size: .55rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .take-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: .65rem;
+      align-items: center;
+      min-height: 2.9rem;
+      padding: .55rem .65rem .5rem .85rem;
+      border-bottom: 1px solid rgba(240, 230, 210, .1);
+    }
+
+    .take-row:last-child { border-bottom: 0; }
+    .take-row.is-selected { box-shadow: inset 2px 0 0 var(--amber); }
+    .take-play, .take-name, .take-export {
+      border: 0;
+      padding: .22rem 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .take-play {
+      width: 1.3rem;
+      color: var(--amber);
+      font-size: .65rem;
+      text-align: left;
+    }
+
+    .take-name {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      font-size: .61rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-align: left;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .take-meta {
+      display: block;
+      margin-top: .22rem;
+      color: var(--cream-dim);
+      font-size: .49rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .take-rename {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--amber);
+      border-radius: 0;
+      padding: .12rem 0 .16rem;
+      background: transparent;
+      color: var(--cream);
+      font: 700 .61rem/1 var(--sans);
+      letter-spacing: .1em;
+      outline: 0;
+      text-transform: uppercase;
+      user-select: text;
+    }
+
+    .take-export {
+      color: var(--cream-dim);
+      font-size: .5rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .take-export:disabled { opacity: .35; cursor: default; }
+    .take-play:focus-visible, .take-name:focus-visible, .take-export:focus-visible { outline: 1px solid var(--amber); outline-offset: 3px; }
+
+    .annotation {
+      position: fixed;
+      z-index: 50;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      background: rgba(7, 20, 38, .97);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 280ms var(--ease), visibility 0s linear 280ms;
+    }
+
+    .annotation.is-visible { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+    .annotation__copy {
+      width: min(92vw, 68rem);
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(2.2rem, 5.3vw, 6rem);
+      font-weight: 400;
+      line-height: .95;
+      letter-spacing: -.045em;
+      text-align: center;
+    }
+
+    .annotation__copy span { display: block; }
+    .annotation__copy span:nth-child(3) { color: var(--amber); font-style: italic; }
+    .annotation__close {
+      position: absolute;
+      bottom: max(1.4rem, env(safe-area-inset-bottom));
+      border: 0;
+      padding: .45rem;
+      background: transparent;
+      color: var(--cream-dim);
+      font-size: .58rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .reduced-plates { display: none; position: fixed; z-index: 1; inset: 0; padding: 4.5rem 1rem 10.5rem; background: var(--navy); }
+    .reduced-grid { display: grid; width: 100%; height: 100%; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); }
+    .plate { position: relative; min-width: 0; overflow: hidden; padding: clamp(.7rem, 1.8vw, 1.6rem); border-right: 1px solid var(--line); }
+    .plate:last-child { border-right: 0; }
+    .plate__number { color: var(--amber); font-size: .55rem; letter-spacing: .18em; }
+    .plate p { margin: clamp(2rem, 7vh, 5rem) 0 0; font-family: var(--serif); font-size: clamp(1.25rem, 2.35vw, 2.8rem); line-height: .93; letter-spacing: -.035em; }
+    .plate p em { color: var(--amber); }
+    .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .plate__canvas-label { position: absolute; z-index: 2; left: .8rem; bottom: .8rem; color: var(--cream-dim); font-size: .5rem; letter-spacing: .14em; text-transform: uppercase; }
+
+    body.reduced .experience { display: none; }
+    body.reduced .reduced-plates { display: block; }
+    body.reduced .engage { color: var(--cream-dim); cursor: not-allowed; border-color: transparent; }
+
+    @media (max-width: 800px) {
+      .masthead { grid-template-columns: 1fr auto; }
+      .masthead__center { display: none; }
+      .statement, .interlude { grid-template-columns: 1fr; align-content: center; gap: 1.4rem; }
+      .statement { padding-right: 1.5rem; }
+      .statement__copy { max-width: 8.8em; font-size: clamp(3rem, 13vw, 6rem); }
+      .statement__aside { display: none; }
+      .interlude { padding-bottom: 15.5rem; }
+      .interlude__copy { padding: 0; align-self: auto; }
+      .interlude__title { margin-bottom: .6rem; font-size: clamp(2.2rem, 9vw, 4rem); }
+      .canvas-wrap { justify-self: stretch; width: 100%; height: min(39vh, 20rem); }
+      .progress-rail { display: none; }
+      .instrument { left: 1rem; right: 1rem; width: auto; }
+      .takes-shelf { bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 13.4rem); max-height: min(32vh, 15rem); }
+      .takes-shelf__list { max-height: min(24vh, 11rem); }
+      .reduced-plates { padding: 4.5rem .75rem 10rem; overflow: auto; touch-action: pan-y; }
+      .reduced-grid { height: auto; min-height: 100%; grid-template-columns: 1fr; }
+      .plate { min-height: 13rem; border-right: 0; border-bottom: 1px solid var(--line); }
+      .plate:last-child { border-bottom: 0; }
+    }
+
+    @media (max-height: 650px) and (min-width: 801px) {
+      .segment { padding-top: 4.3rem; padding-bottom: 10rem; }
+      .canvas-wrap { height: 48vh; }
+      .instrument { width: 21rem; }
+      .takes-shelf { max-height: 34vh; }
+      #velocity-chart { height: 4rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="experience" id="experience">
+    <header class="masthead">
+      <span>Study 07 / The autopilot</span>
+      <span class="masthead__center" id="chapter-label">01 / Composition</span>
+      <span class="masthead__help">Scroll freely / R take / G drive / A model</span>
+    </header>
+
+    <div class="progress-rail" aria-hidden="true">
+      <div class="progress-rail__fill"></div>
+      <div class="progress-rail__marker"></div>
+    </div>
+
+    <section class="segment statement" data-segment="0" aria-label="Composition">
+      <h1 class="statement__copy"><span>A machine</span><span>can compose</span><span>the frames.</span></h1>
+      <p class="statement__aside"><span class="segment-index">01 / Composition</span>Order is calculable. Rhythm is where the certainty ends.</p>
+    </section>
+
+    <section class="segment interlude" data-segment="1" aria-label="Velocity metronome">
+      <div class="interlude__copy">
+        <span class="segment-index">02 / Tempo</span>
+        <h2 class="interlude__title">The measure follows the hand.</h2>
+        <p class="interlude__note">Pendulum tempo is derived from actual scroll velocity.</p>
+      </div>
+      <div class="canvas-wrap"><canvas id="metronome" aria-label="A metronome whose tempo follows scroll velocity"></canvas><div class="canvas-caption"><span>Velocity input</span><span id="tempo-readout">40 bpm</span></div></div>
+    </section>
+
+    <section class="segment statement" data-segment="2" aria-label="Duration">
+      <h2 class="statement__copy"><span>It cannot yet feel</span><span class="amber">how long</span><span>a moment should last.</span></h2>
+      <p class="statement__aside"><span class="segment-index">03 / Duration</span>The authored pause is not an absence. It is the direction.</p>
+    </section>
+
+    <section class="segment interlude" data-segment="3" aria-label="Pacing breath">
+      <div class="interlude__copy">
+        <span class="segment-index">04 / Breath</span>
+        <h2 class="interlude__title">Pacing becomes a period.</h2>
+        <p class="interlude__note">The circle completes one breath in the current pacing period.</p>
+      </div>
+      <div class="canvas-wrap"><canvas id="breath" aria-label="A circle breathing at the current pacing period"></canvas><div class="canvas-caption"><span>Current period</span><span id="period-readout">4.8 sec</span></div></div>
+    </section>
+
+    <section class="segment statement" data-segment="4" aria-label="Direction">
+      <h2 class="statement__copy"><span>The frame</span><span>is composed.</span><span class="amber">The pause</span><span>is directed.</span></h2>
+      <p class="statement__aside"><span class="segment-index">05 / Direction</span>Autopilot can hold the beat. The final instinct still belongs to you.</p>
+    </section>
+  </main>
+
+  <section class="reduced-plates" id="reduced-plates" aria-label="Static pacing plates">
+    <div class="reduced-grid">
+      <article class="plate"><span class="plate__number">01</span><p>A machine can compose the frames.</p></article>
+      <article class="plate"><canvas id="plate-metronome"></canvas><span class="plate__canvas-label">Tempo / static</span></article>
+      <article class="plate"><span class="plate__number">03</span><p>It cannot yet feel <em>how long</em> a moment should last.</p></article>
+      <article class="plate"><canvas id="plate-breath"></canvas><span class="plate__canvas-label">Breath / static</span></article>
+      <article class="plate"><span class="plate__number">05</span><p>The frame is composed. <em>The pause is directed.</em></p></article>
+    </div>
+  </section>
+
+  <aside class="instrument" aria-label="Driver and pacing instrument">
+    <div class="instrument__head">
+      <div class="driver" id="driver-label">Driver: Human</div>
+      <button class="engage" id="engage" type="button">Engage autopilot</button>
+    </div>
+    <div class="instrument__readout">
+      <span class="readout-label" id="hold-label">Current hold</span><span class="readout-value"><strong id="hold-current">0.0</strong> / <span id="hold-authored">4.6</span> s</span>
+      <span class="readout-label">Segment</span><span class="readout-value" id="segment-readout">01 / 05</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="velocity-chart" aria-label="Actual, authored, and selected take velocity over the last ten seconds"></canvas>
+      <div class="chart-key"><span>Actual</span><span>Authored</span><span>Take</span></div>
+    </div>
+  </aside>
+
+  <aside class="takes-shelf" aria-label="Recorded takes">
+    <div class="takes-shelf__head"><span>Takes / R record</span><button class="take-export" id="take-export" type="button" disabled>Export JSON</button></div>
+    <div class="takes-shelf__list" id="takes-list"><p class="takes-empty">R / record the first take</p></div>
+  </aside>
+
+  <aside class="annotation" id="annotation" aria-label="Pacing model annotation">
+    <p class="annotation__copy"><span>Each keyframe stores time, position, dwell.</span><span>Position eases only between held frames.</span><span>The authored velocity is plotted in amber.</span><span>Input returns the scalar to your hand.</span><span>Below threshold for 400ms becomes a dwell; transit ease is fitted by least velocity error.</span><span>A named take is a reusable direction, not a replay.</span></p>
+    <button class="annotation__close" id="annotation-close" type="button">A / close model</button>
+  </aside>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const clamp = (value, low, high) => value < low ? low : value > high ? high : value;
+      const smoother = value => value * value * value * (value * (value * 6 - 15) + 10);
+      const smootherDerivative = value => 30 * value * value * (value * (value - 2) + 1);
+      const INPUT = { passive: false };
+
+      /* Trimmed vendored mander-motion: one scalar, inertial human input, optional authored driver. */
+      class ManderMotion {
+        constructor(options) {
+          this.lengthVh = options.lengthVh || 500;
+          this.onFrame = options.onFrame;
+          this.onInput = options.onInput;
+          this.total = Math.max(1, innerHeight * this.lengthVh * .01);
+          this.current = 0;
+          this.target = 0;
+          this.velocity = 0;
+          this.last = 0;
+          this.touchY = 0;
+          this.touching = false;
+          this.driver = null;
+          this.autoPosition = 0;
+          this.autoVelocity = 0;
+          this.running = false;
+          this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          this.tick = this.tick.bind(this);
+          this.wheel = this.wheel.bind(this);
+          this.key = this.key.bind(this);
+          this.touchStart = this.touchStart.bind(this);
+          this.touchMove = this.touchMove.bind(this);
+          this.touchEnd = this.touchEnd.bind(this);
+          this.resize = this.resize.bind(this);
+          addEventListener('wheel', this.wheel, INPUT);
+          addEventListener('keydown', this.key, INPUT);
+          addEventListener('touchstart', this.touchStart, { passive: true });
+          addEventListener('touchmove', this.touchMove, INPUT);
+          addEventListener('touchend', this.touchEnd, INPUT);
+          addEventListener('touchcancel', this.touchEnd, INPUT);
+          addEventListener('resize', this.resize);
+        }
+        start() { if (!this.running) { this.running = true; requestAnimationFrame(this.tick); } }
+        setDriver(driver) { this.driver = driver; }
+        setDrivenState(position, velocity) { this.autoPosition = clamp(position, 0, this.total); this.autoVelocity = velocity; }
+        releaseDriver() {
+          if (!this.driver) return;
+          this.driver = null;
+          this.target = clamp(this.current + this.velocity * .11, 0, this.total);
+        }
+        scrollTo(value, immediate) {
+          this.target = clamp(Number(value) || 0, 0, this.total);
+          if (immediate || this.reduced) { this.current = this.target; this.velocity = 0; }
+        }
+        scrollBy(delta) { this.scrollTo(this.target + delta, false); }
+        wheel(event) {
+          event.preventDefault();
+          this.onInput('wheel');
+          let delta = event.deltaY;
+          if (event.deltaMode === 1) delta *= 16;
+          else if (event.deltaMode === 2) delta *= innerHeight;
+          // 1.85: tuned so one full trackpad swipe carries roughly one segment beat
+          // (1.08 left a swipe stranded mid-segment — Austin, 2026-07-22).
+          this.scrollBy(delta * 1.85);
+        }
+        key(event) {
+          if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+          const step = innerHeight * .78;
+          let next = this.target;
+          if (event.key === 'ArrowDown') next += step * .34;
+          else if (event.key === 'ArrowUp') next -= step * .34;
+          else if (event.key === 'PageDown' || event.key === ' ') next += step;
+          else if (event.key === 'PageUp') next -= step;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = this.total;
+          else return;
+          event.preventDefault();
+          this.onInput('key');
+          this.scrollTo(next, false);
+        }
+        touchStart(event) {
+          if (event.touches.length !== 1) return;
+          this.onInput('touch');
+          this.touching = true;
+          this.touchY = event.touches[0].clientY;
+        }
+        touchMove(event) {
+          if (!this.touching || event.touches.length !== 1) return;
+          event.preventDefault();
+          const nextY = event.touches[0].clientY;
+          this.scrollBy((this.touchY - nextY) * 1.35);
+          this.touchY = nextY;
+        }
+        touchEnd() { this.touching = false; }
+        resize() {
+          const progress = this.total ? this.current / this.total : 0;
+          const targetProgress = this.total ? this.target / this.total : 0;
+          this.total = Math.max(1, innerHeight * this.lengthVh * .01);
+          this.current = progress * this.total;
+          this.target = targetProgress * this.total;
+        }
+        tick(time) {
+          if (!this.running) return;
+          const dt = this.last ? Math.min((time - this.last) * .001, .05) : 1 / 60;
+          this.last = time;
+          if (this.driver) {
+            this.driver(dt, time, this);
+            this.current = this.autoPosition;
+            this.target = this.current;
+            this.velocity = this.autoVelocity;
+          } else if (this.reduced) {
+            this.current = this.target;
+            this.velocity = 0;
+          } else {
+            const desired = (this.target - this.current) * 11.5;
+            const response = 1 - Math.exp(-dt * 11);
+            this.velocity += (desired - this.velocity) * response;
+            this.current += this.velocity * dt;
+            if (this.current <= 0 || this.current >= this.total) {
+              this.current = clamp(this.current, 0, this.total);
+              if ((this.current === 0 && this.velocity < 0) || (this.current === this.total && this.velocity > 0)) this.velocity = 0;
+            }
+            if (Math.abs(this.target - this.current) < .04 && Math.abs(this.velocity) < .5) { this.current = this.target; this.velocity = 0; }
+          }
+          this.onFrame(clamp(this.current / this.total, 0, 1), dt, this.velocity / this.total, time);
+          requestAnimationFrame(this.tick);
+        }
+      }
+
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const root = document.documentElement;
+      const body = document.body;
+      const segments = document.querySelectorAll('.segment');
+      const chapterLabel = document.querySelector('#chapter-label');
+      const engageButton = document.querySelector('#engage');
+      const driverLabel = document.querySelector('#driver-label');
+      const holdLabel = document.querySelector('#hold-label');
+      const holdCurrent = document.querySelector('#hold-current');
+      const holdAuthored = document.querySelector('#hold-authored');
+      const segmentReadout = document.querySelector('#segment-readout');
+      const tempoReadout = document.querySelector('#tempo-readout');
+      const periodReadout = document.querySelector('#period-readout');
+      const annotation = document.querySelector('#annotation');
+      const annotationClose = document.querySelector('#annotation-close');
+      const takesList = document.querySelector('#takes-list');
+      const takeExport = document.querySelector('#take-export');
+      const metronomeCanvas = document.querySelector('#metronome');
+      const breathCanvas = document.querySelector('#breath');
+      const chartCanvas = document.querySelector('#velocity-chart');
+      const metronome = metronomeCanvas.getContext('2d');
+      const breath = breathCanvas.getContext('2d');
+      const chart = chartCanvas.getContext('2d');
+      const chapterNames = ['01 / Composition', '02 / Tempo', '03 / Duration', '04 / Breath', '05 / Direction'];
+
+      /* Authored keyframes use [arrival time in seconds, position, dwell in seconds]. */
+      const pacing = [
+        [0, 0, 4.6],
+        [6.7, .25, 1.35],
+        [10.0, .5, 5.8],
+        [18.1, .75, 1.55],
+        [21.7, 1, 6.4]
+      ];
+      const pacingEnd = pacing[pacing.length - 1][0] + pacing[pacing.length - 1][2];
+      const dwellBySegment = new Float32Array([4.6, 1.35, 5.8, 1.55, 6.4]);
+      const segmentOffsets = new Float32Array(segments.length);
+      const segmentOpacities = new Float32Array(segments.length);
+      const HISTORY = 300;
+      const historyActual = new Float32Array(HISTORY);
+      const historyGhost = new Float32Array(HISTORY);
+      const historyTake = new Float32Array(HISTORY);
+      const STORAGE_KEY = 'motion-lab.study-07.takes.v1';
+      const DWELL_MS = 400;
+      const VELOCITY_THRESHOLD = .006;
+      const MAX_TAKES = 8;
+      const easeFunctions = {
+        linear: value => value,
+        easeIn: value => value * value * value,
+        easeOut: value => 1 - Math.pow(1 - value, 3),
+        easeInOut: value => value < .5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) * .5
+      };
+      const easeDerivatives = {
+        linear: () => 1,
+        easeIn: value => 3 * value * value,
+        easeOut: value => 3 * (1 - value) * (1 - value),
+        easeInOut: value => value < .5 ? 12 * value * value : 12 * (1 - value) * (1 - value)
+      };
+      let historyHead = 0;
+      let historyCount = 0;
+      let historyClock = 0;
+      let ghostTime = 0;
+      let autoTime = 0;
+      let autoAge = 0;
+      let autoVelocityDelta = 0;
+      let autopilot = false;
+      let deterministic = false;
+      let currentSegment = 0;
+      let previousSegment = 0;
+      let dwellElapsed = 0;
+      let metronomePhase = 0;
+      let breathPhase = 0;
+      let breathPeriod = 4.8;
+      let wasHolding = true;
+      let lastUi = 0;
+      let viewWidth = 1;
+      let viewHeight = 1;
+      let dpr = 1;
+      let takes = [];
+      let selectedTakeId = null;
+      let recording = null;
+      let replaying = null;
+      let replayTime = 0;
+      let replayAge = 0;
+      let takeGhostTime = 0;
+      let reducedReplayFrames = null;
+
+      function samplePacing(time) {
+        const bounded = clamp(time, 0, pacingEnd);
+        for (let index = 0; index < pacing.length; index += 1) {
+          const point = pacing[index];
+          const holdEnd = point[0] + point[2];
+          if (bounded <= holdEnd || index === pacing.length - 1) {
+            samplePacing.position = point[1];
+            samplePacing.velocity = 0;
+            samplePacing.segment = index;
+            samplePacing.holding = true;
+            return;
+          }
+          const next = pacing[index + 1];
+          if (bounded < next[0]) {
+            const duration = next[0] - holdEnd;
+            const local = clamp((bounded - holdEnd) / duration, 0, 1);
+            samplePacing.position = point[1] + (next[1] - point[1]) * smoother(local);
+            samplePacing.velocity = (next[1] - point[1]) * smootherDerivative(local) / duration;
+            samplePacing.segment = local < .5 ? index : index + 1;
+            samplePacing.holding = false;
+            return;
+          }
+        }
+      }
+      samplePacing.position = 0;
+      samplePacing.velocity = 0;
+      samplePacing.segment = 0;
+      samplePacing.holding = true;
+
+      function pacingTimeForPosition(position) {
+        const target = clamp(position, 0, 1);
+        let low = 0;
+        let high = pacingEnd;
+        for (let index = 0; index < 28; index += 1) {
+          const middle = (low + high) * .5;
+          samplePacing(middle);
+          if (samplePacing.position < target) low = middle;
+          else high = middle;
+        }
+        return (low + high) * .5;
+      }
+
+      function selectedTake() {
+        return takes.find(take => take.id === selectedTakeId) || null;
+      }
+
+      function takeDuration(take) {
+        return take.keyframes.reduce((total, frame) => total + frame.hold_ms + frame.over_ms, 0);
+      }
+
+      function fitEase(raw, startTime, endTime, fromPosition, toPosition) {
+        const duration = endTime - startTime;
+        const distance = toPosition - fromPosition;
+        if (duration < 32 || Math.abs(distance) < .001) return 'linear';
+        const durationSeconds = duration * .001;
+        const scores = { easeIn: 0, easeOut: 0, easeInOut: 0, linear: 0 };
+        let count = 0;
+        for (let index = 1; index < raw.length - 1; index += 1) {
+          const point = raw[index];
+          if (point.t <= startTime || point.t >= endTime) continue;
+          const before = raw[index - 1];
+          const after = raw[index + 1];
+          const seconds = (after.t - before.t) * .001;
+          if (seconds <= 0) continue;
+          const local = clamp((point.t - startTime) / duration, 0, 1);
+          const velocity = (after.scalar - before.scalar) / seconds;
+          const observed = clamp(velocity * durationSeconds / distance, -6, 6);
+          Object.keys(scores).forEach(name => {
+            const error = observed - easeDerivatives[name](local);
+            scores[name] += error * error;
+          });
+          count += 1;
+        }
+        if (!count) return 'linear';
+        return Object.keys(scores).reduce((best, name) => scores[name] < scores[best] ? name : best, 'linear');
+      }
+
+      function distill(raw) {
+        if (!raw.length) return { keyframes: [], dwellCount: 0 };
+        if (raw.length === 1) return { keyframes: [{ pos: raw[0].scalar, hold_ms: 0, over_ms: 0, ease: 'linear' }], dwellCount: 0 };
+        const velocities = new Float32Array(raw.length);
+        for (let index = 0; index < raw.length; index += 1) {
+          const before = raw[Math.max(0, index - 1)];
+          const after = raw[Math.min(raw.length - 1, index + 1)];
+          const seconds = (after.t - before.t) * .001;
+          velocities[index] = seconds > 0 ? (after.scalar - before.scalar) / seconds : 0;
+        }
+        const dwells = [];
+        let runStart = -1;
+        for (let index = 0; index <= raw.length; index += 1) {
+          const low = index < raw.length && Math.abs(velocities[index]) < VELOCITY_THRESHOLD;
+          if (low && runStart < 0) runStart = index;
+          if ((!low || index === raw.length) && runStart >= 0) {
+            const runEnd = index - 1;
+            const hold = raw[runEnd].t - raw[runStart].t;
+            if (hold >= DWELL_MS) {
+              let position = 0;
+              for (let sample = runStart; sample <= runEnd; sample += 1) position += raw[sample].scalar;
+              dwells.push({
+                start: raw[runStart].t,
+                end: raw[runEnd].t,
+                pos: position / (runEnd - runStart + 1),
+                dwell: true
+              });
+            }
+            runStart = -1;
+          }
+        }
+        const anchors = dwells.slice();
+        const last = raw[raw.length - 1];
+        if (!anchors.length || anchors[0].start > raw[0].t + 1) anchors.unshift({ start: raw[0].t, end: raw[0].t, pos: raw[0].scalar, dwell: false });
+        if (!anchors.length || anchors[anchors.length - 1].end < last.t - 1) anchors.push({ start: last.t, end: last.t, pos: last.scalar, dwell: false });
+        const keyframes = anchors.map((anchor, index) => {
+          const next = anchors[index + 1];
+          const over = next ? Math.max(0, next.start - anchor.end) : 0;
+          return {
+            pos: Number(clamp(anchor.pos, 0, 1).toFixed(6)),
+            hold_ms: Math.max(0, Math.round(anchor.end - anchor.start)),
+            over_ms: Math.max(0, Math.round(over)),
+            ease: next ? fitEase(raw, anchor.end, next.start, anchor.pos, next.pos) : 'linear'
+          };
+        });
+        return { keyframes, dwellCount: dwells.length };
+      }
+
+      function loadTakes() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          if (!Array.isArray(saved)) return;
+          takes = saved.filter(take => take && Array.isArray(take.raw) && Array.isArray(take.keyframes)).slice(-MAX_TAKES);
+          if (takes.length) selectedTakeId = takes[takes.length - 1].id;
+        } catch (error) {
+          console.warn('[Study 07] stored takes could not be read', error);
+        }
+      }
+
+      function persistTakes() {
+        while (takes.length > MAX_TAKES) takes.shift();
+        let saved = false;
+        while (!saved && takes.length) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(takes));
+            saved = true;
+          } catch (error) {
+            takes.shift();
+            console.warn('[Study 07] storage pressure evicted the oldest take');
+          }
+        }
+        if (!takes.length) {
+          try { localStorage.setItem(STORAGE_KEY, '[]'); } catch (error) { console.warn('[Study 07] take storage unavailable', error); }
+        }
+        if (!takes.some(take => take.id === selectedTakeId)) selectedTakeId = takes.length ? takes[takes.length - 1].id : null;
+      }
+
+      function setSelectedTake(id) {
+        if (!takes.some(take => take.id === id)) return;
+        selectedTakeId = id;
+        takeGhostTime = 0;
+        renderTakes();
+        drawChart();
+      }
+
+      function beginRename(take, container) {
+        if (replaying) stopTakeReplay();
+        selectedTakeId = take.id;
+        const input = document.createElement('input');
+        input.className = 'take-rename';
+        input.value = take.name;
+        input.maxLength = 48;
+        input.setAttribute('aria-label', 'Rename take ' + take.number);
+        container.replaceChildren(input);
+        input.focus();
+        input.select();
+        let settled = false;
+        const finish = save => {
+          if (settled) return;
+          settled = true;
+          const value = input.value.trim();
+          if (save && value) take.name = value;
+          persistTakes();
+          renderTakes();
+        };
+        input.addEventListener('keydown', event => {
+          event.stopPropagation();
+          if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+          else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+        });
+        input.addEventListener('blur', () => finish(true));
+      }
+
+      function renderTakes() {
+        takesList.replaceChildren();
+        takeExport.disabled = !selectedTake();
+        if (!takes.length) {
+          const empty = document.createElement('p');
+          empty.className = 'takes-empty';
+          empty.textContent = 'R / record the first take';
+          takesList.appendChild(empty);
+          return;
+        }
+        takes.forEach((take, index) => {
+          const row = document.createElement('div');
+          row.className = 'take-row' + (take.id === selectedTakeId ? ' is-selected' : '');
+          const play = document.createElement('button');
+          play.className = 'take-play';
+          play.type = 'button';
+          play.textContent = replaying && replaying.id === take.id ? '■' : '▶';
+          play.setAttribute('aria-label', (replaying && replaying.id === take.id ? 'Stop ' : 'Play ') + take.name);
+          play.addEventListener('click', () => {
+            if (replaying && replaying.id === take.id) stopTakeReplay();
+            else setTakeReplay(index);
+          });
+          const copy = document.createElement('div');
+          const name = document.createElement('button');
+          name.className = 'take-name';
+          name.type = 'button';
+          name.textContent = take.name;
+          name.title = 'Rename ' + take.name;
+          name.addEventListener('click', () => beginRename(take, copy));
+          const meta = document.createElement('span');
+          meta.className = 'take-meta';
+          meta.textContent = (take.duration_ms * .001).toFixed(1) + ' sec / ' + take.dwell_count + ' dwell' + (take.dwell_count === 1 ? '' : 's');
+          copy.append(name, meta);
+          const select = document.createElement('button');
+          select.className = 'take-export';
+          select.type = 'button';
+          select.textContent = take.id === selectedTakeId ? 'Selected' : 'Select';
+          select.addEventListener('click', () => {
+            if (replaying) stopTakeReplay();
+            setSelectedTake(take.id);
+          });
+          row.append(play, copy, select);
+          takesList.appendChild(row);
+        });
+      }
+
+      function exportSelectedTake() {
+        const take = selectedTake();
+        if (!take) return false;
+        // total makes positions portable: replay elsewhere as pos/total, not raw px.
+        const artifact = { name: take.name, total: scroller.total, keyframes: take.keyframes.map(frame => ({ pos: frame.pos, hold_ms: frame.hold_ms, over_ms: frame.over_ms, ease: frame.ease })) };
+        const blob = new Blob([JSON.stringify(artifact, null, 2) + '\n'], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const filename = take.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'take-' + take.number;
+        link.download = filename + '.json';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 0);
+        return artifact;
+      }
+
+      function startRecording() {
+        if (recording) return true;
+        if (replaying) stopTakeReplay();
+        if (autopilot) setAutopilot(false);
+        deterministic = false;
+        const number = takes.reduce((highest, take) => Math.max(highest, Number(take.number) || 0), 0) + 1;
+        recording = { number, started: performance.now(), raw: [] };
+        body.classList.add('is-recording');
+        driverLabel.textContent = 'Driver: Human / Recording Take ' + number;
+        recording.raw.push({ t: 0, scalar: clamp(engine.current / engine.total, 0, 1) });
+        return true;
+      }
+
+      function stopRecording() {
+        if (!recording) return null;
+        const active = recording;
+        const elapsed = Math.max(0, performance.now() - active.started);
+        const scalar = clamp(engine.current / engine.total, 0, 1);
+        const last = active.raw[active.raw.length - 1];
+        if (!last || elapsed > last.t + 1) active.raw.push({ t: elapsed, scalar });
+        const distilled = distill(active.raw);
+        const duration = Math.max(0, Math.round(active.raw[active.raw.length - 1].t));
+        const take = {
+          id: 'take-' + Date.now() + '-' + active.number,
+          number: active.number,
+          name: 'TAKE ' + active.number,
+          created_at: Date.now(),
+          duration_ms: duration,
+          dwell_count: distilled.dwellCount,
+          raw: active.raw.map(point => ({ t: Math.round(point.t), scalar: Number(point.scalar.toFixed(6)) })),
+          keyframes: distilled.keyframes
+        };
+        recording = null;
+        body.classList.remove('is-recording');
+        takes.push(take);
+        selectedTakeId = take.id;
+        persistTakes();
+        renderTakes();
+        driverLabel.textContent = reduced ? 'Driver: Reduced' : 'Driver: Human';
+        console.info('[Study 07] distilled take ' + take.number + ' / ' + take.raw.length + ' raw / ' + take.keyframes.length + ' keyframes');
+        return take;
+      }
+
+      function sampleTake(take, time) {
+        const frames = take.keyframes;
+        if (!frames.length) {
+          sampleTake.position = 0;
+          sampleTake.velocity = 0;
+          sampleTake.frame = 0;
+          return;
+        }
+        let cursor = 0;
+        for (let index = 0; index < frames.length; index += 1) {
+          const frame = frames[index];
+          const holdEnd = cursor + frame.hold_ms;
+          if (time <= holdEnd || index === frames.length - 1) {
+            sampleTake.position = frame.pos;
+            sampleTake.velocity = 0;
+            sampleTake.frame = index;
+            return;
+          }
+          cursor = holdEnd;
+          const next = frames[index + 1];
+          if (next && time < cursor + frame.over_ms) {
+            const local = frame.over_ms ? clamp((time - cursor) / frame.over_ms, 0, 1) : 1;
+            const easing = easeFunctions[frame.ease] || easeFunctions.linear;
+            const derivative = easeDerivatives[frame.ease] || easeDerivatives.linear;
+            sampleTake.position = frame.pos + (next.pos - frame.pos) * easing(local);
+            sampleTake.velocity = frame.over_ms ? (next.pos - frame.pos) * derivative(local) / (frame.over_ms * .001) : 0;
+            sampleTake.frame = index;
+            return;
+          }
+          cursor += frame.over_ms;
+        }
+        sampleTake.position = frames[frames.length - 1].pos;
+        sampleTake.velocity = 0;
+        sampleTake.frame = frames.length - 1;
+      }
+      sampleTake.position = 0;
+      sampleTake.velocity = 0;
+      sampleTake.frame = 0;
+
+      function stopTakeReplay() {
+        if (!replaying) return false;
+        replaying = null;
+        reducedReplayFrames = null;
+        engine.releaseDriver();
+        body.classList.remove('is-autopilot');
+        driverLabel.textContent = recording ? 'Driver: Human / Recording Take ' + recording.number : reduced ? 'Driver: Reduced' : 'Driver: Human';
+        engageButton.textContent = reduced ? 'Autopilot unavailable' : 'Engage autopilot';
+        renderTakes();
+        return false;
+      }
+
+      function takeReplayFrame(dt, time, motion) {
+        if (!replaying) return;
+        if (reduced) {
+          replayAge += dt * 1000;
+          let cursor = 0;
+          let frame = reducedReplayFrames[reducedReplayFrames.length - 1];
+          for (let index = 0; index < reducedReplayFrames.length; index += 1) {
+            frame = reducedReplayFrames[index];
+            const hold = Math.max(frame.hold_ms, 120);
+            if (replayAge < cursor + hold) break;
+            cursor += hold;
+          }
+          motion.setDrivenState(frame.pos * motion.total, 0);
+          if (replayAge >= reducedReplayFrames.reduce((sum, item) => sum + Math.max(item.hold_ms, 120), 0)) stopTakeReplay();
+          return;
+        }
+        replayTime = Math.min(takeDuration(replaying), replayTime + dt * 1000);
+        sampleTake(replaying, replayTime);
+        motion.setDrivenState(sampleTake.position * motion.total, sampleTake.velocity * motion.total);
+        if (replayTime >= takeDuration(replaying)) stopTakeReplay();
+      }
+
+      function setTakeReplay(index) {
+        const take = typeof index === 'string' ? takes.find(item => item.id === index) : takes[Number(index)];
+        if (!take) return false;
+        if (recording) stopRecording();
+        if (autopilot) setAutopilot(false);
+        if (replaying) stopTakeReplay();
+        deterministic = false;
+        selectedTakeId = take.id;
+        takeGhostTime = 0;
+        replayTime = 0;
+        replayAge = 0;
+        replaying = take;
+        if (reduced) {
+          reducedReplayFrames = take.keyframes.filter(frame => frame.hold_ms >= DWELL_MS);
+          if (!reducedReplayFrames.length) reducedReplayFrames = take.keyframes.length ? [take.keyframes[0]] : [{ pos: 0, hold_ms: 120 }];
+        }
+        body.classList.add('is-autopilot');
+        const defaultName = 'TAKE ' + take.number;
+        driverLabel.textContent = 'Driver: Take ' + take.number + (take.name.toUpperCase() === defaultName ? '' : ' (' + take.name + ')');
+        engageButton.textContent = reduced ? 'Take replay active' : 'Release take';
+        engine.setDriver(takeReplayFrame);
+        renderTakes();
+        return true;
+      }
+
+      function configureCanvas(canvas, context) {
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, rect.width);
+        const height = Math.max(1, rect.height);
+        canvas.width = Math.max(1, Math.round(width * dpr));
+        canvas.height = Math.max(1, Math.round(height * dpr));
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return width;
+      }
+
+      function drawMetronome(context, canvas, phase, velocity, isPlate) {
+        const width = canvas.width / dpr;
+        const height = canvas.height / dpr;
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = '#071426';
+        context.fillRect(0, 0, width, height);
+        const size = Math.min(width, height);
+        const cx = width * .5;
+        const pivotY = height * .27;
+        const length = size * .34;
+        const energy = clamp(Math.abs(velocity) / .12, 0, 1);
+        const angle = Math.sin(phase) * (.18 + energy * .52);
+        const bobX = cx + Math.sin(angle) * length;
+        const bobY = pivotY + Math.cos(angle) * length;
+        context.strokeStyle = 'rgba(240,230,210,.18)';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(width * .13, height * .82);
+        context.lineTo(width * .87, height * .82);
+        context.stroke();
+        context.strokeStyle = '#f0e6d2';
+        context.lineWidth = Math.max(1, size * .004);
+        context.beginPath();
+        context.moveTo(cx, pivotY);
+        context.lineTo(bobX, bobY);
+        context.stroke();
+        context.fillStyle = '#d79b42';
+        context.beginPath();
+        context.arc(bobX, bobY, Math.max(6, size * .026), 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#f0e6d2';
+        context.beginPath();
+        context.arc(cx, pivotY, Math.max(3, size * .011), 0, Math.PI * 2);
+        context.fill();
+        if (!isPlate) {
+          context.strokeStyle = 'rgba(215,155,66,.34)';
+          context.setLineDash([2, 8]);
+          context.beginPath();
+          context.arc(cx, pivotY, length, Math.PI * .36, Math.PI * .64);
+          context.stroke();
+          context.setLineDash([]);
+        }
+      }
+
+      function drawBreath(context, canvas, phase, period, isPlate) {
+        const width = canvas.width / dpr;
+        const height = canvas.height / dpr;
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = '#071426';
+        context.fillRect(0, 0, width, height);
+        const size = Math.min(width, height);
+        const cx = width * .5;
+        const cy = height * .49;
+        const pulse = .5 - Math.cos(phase) * .5;
+        const radius = size * (.17 + pulse * .12);
+        context.strokeStyle = 'rgba(240,230,210,.17)';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.arc(cx, cy, size * .3, 0, Math.PI * 2);
+        context.stroke();
+        context.fillStyle = 'rgba(215,155,66,.16)';
+        context.beginPath();
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = '#d79b42';
+        context.lineWidth = Math.max(1, size * .004);
+        context.stroke();
+        context.fillStyle = '#f0e6d2';
+        context.beginPath();
+        context.arc(cx, cy, Math.max(2, size * .008), 0, Math.PI * 2);
+        context.fill();
+        if (!isPlate) {
+          context.strokeStyle = 'rgba(240,230,210,.22)';
+          context.beginPath();
+          context.moveTo(cx - size * .12, cy + size * .39);
+          context.lineTo(cx + size * .12, cy + size * .39);
+          context.stroke();
+        }
+      }
+
+      function drawChart() {
+        const width = chartCanvas.width / dpr;
+        const height = chartCanvas.height / dpr;
+        chart.clearRect(0, 0, width, height);
+        chart.strokeStyle = 'rgba(240,230,210,.12)';
+        chart.lineWidth = 1;
+        chart.beginPath();
+        chart.moveTo(0, height * .64);
+        chart.lineTo(width, height * .64);
+        chart.stroke();
+        if (historyCount < 2) return;
+        const maxVelocity = .18;
+        const usable = height * .46;
+        const baseY = height * .64;
+        chart.strokeStyle = 'rgba(215,155,66,.54)';
+        chart.lineWidth = 1.25;
+        chart.beginPath();
+        for (let index = 0; index < historyCount; index += 1) {
+          const source = (historyHead - historyCount + index + HISTORY) % HISTORY;
+          const x = index * width / (HISTORY - 1);
+          const y = baseY - clamp(historyGhost[source] / maxVelocity, -.6, 1) * usable;
+          if (index === 0) chart.moveTo(x, y); else chart.lineTo(x, y);
+        }
+        chart.stroke();
+        if (selectedTake()) {
+          chart.save();
+          chart.strokeStyle = 'rgba(240,230,210,.42)';
+          chart.lineWidth = 1.1;
+          chart.setLineDash([3, 4]);
+          chart.beginPath();
+          for (let index = 0; index < historyCount; index += 1) {
+            const source = (historyHead - historyCount + index + HISTORY) % HISTORY;
+            const x = index * width / (HISTORY - 1);
+            const y = baseY - clamp(historyTake[source] / maxVelocity, -.6, 1) * usable;
+            if (index === 0) chart.moveTo(x, y); else chart.lineTo(x, y);
+          }
+          chart.stroke();
+          chart.restore();
+        }
+        chart.strokeStyle = '#f0e6d2';
+        chart.lineWidth = 1.45;
+        chart.beginPath();
+        for (let index = 0; index < historyCount; index += 1) {
+          const source = (historyHead - historyCount + index + HISTORY) % HISTORY;
+          const x = index * width / (HISTORY - 1);
+          const y = baseY - clamp(historyActual[source] / maxVelocity, -.6, 1) * usable;
+          if (index === 0) chart.moveTo(x, y); else chart.lineTo(x, y);
+        }
+        chart.stroke();
+      }
+
+      function resize() {
+        viewWidth = innerWidth;
+        viewHeight = innerHeight;
+        dpr = Math.min(devicePixelRatio || 1, 1.5);
+        configureCanvas(metronomeCanvas, metronome);
+        configureCanvas(breathCanvas, breath);
+        configureCanvas(chartCanvas, chart);
+        if (reduced) drawReducedPlates();
+      }
+
+      function drawReducedPlates() {
+        const plateMetro = document.querySelector('#plate-metronome');
+        const plateBreath = document.querySelector('#plate-breath');
+        const plateMetroContext = plateMetro.getContext('2d');
+        const plateBreathContext = plateBreath.getContext('2d');
+        configureCanvas(plateMetro, plateMetroContext);
+        configureCanvas(plateBreath, plateBreathContext);
+        drawMetronome(plateMetroContext, plateMetro, .62, .045, true);
+        drawBreath(plateBreathContext, plateBreath, Math.PI * .8, 4.8, true);
+      }
+
+      function setAutopilot(active) {
+        if (reduced && active) return false;
+        deterministic = false;
+        if (active === autopilot) return autopilot;
+        if (active && recording) stopRecording();
+        if (active && replaying) stopTakeReplay();
+        autopilot = active;
+        body.classList.toggle('is-autopilot', active);
+        if (active) {
+          autoTime = pacingTimeForPosition(engine.current / engine.total);
+          ghostTime = autoTime;
+          samplePacing(autoTime);
+          autoVelocityDelta = engine.velocity / engine.total - samplePacing.velocity;
+          autoAge = 0;
+          engine.setDriver(autopilotFrame);
+          driverLabel.textContent = 'Driver: Autopilot';
+          engageButton.textContent = 'Release control';
+        } else {
+          engine.releaseDriver();
+          driverLabel.textContent = reduced ? 'Driver: Reduced' : 'Driver: Human';
+          engageButton.textContent = reduced ? 'Autopilot unavailable' : 'Engage autopilot';
+        }
+        return autopilot;
+      }
+
+      function autopilotFrame(dt, time, motion) {
+        autoTime = Math.min(pacingEnd, autoTime + dt);
+        autoAge += dt;
+        samplePacing(autoTime);
+        const decay = Math.exp(-autoAge * 4.5);
+        let position = samplePacing.position + autoVelocityDelta * autoAge * decay;
+        let velocity = samplePacing.velocity + autoVelocityDelta * decay * (1 - autoAge * 4.5);
+        position = clamp(position, 0, 1);
+        if (position === 0 && velocity < 0 || position === 1 && velocity > 0) velocity = 0;
+        motion.setDrivenState(position * motion.total, velocity * motion.total);
+        if (autoTime >= pacingEnd && Math.abs(velocity) < .0001) setAutopilot(false);
+      }
+
+      function releaseFromInput() {
+        if (autopilot) setAutopilot(false);
+        if (replaying) stopTakeReplay();
+        deterministic = false;
+      }
+
+      function updateSegments(progress) {
+        const scenePosition = progress * 4;
+        const nextSegment = clamp(Math.round(scenePosition), 0, 4);
+        if (nextSegment !== currentSegment) {
+          previousSegment = currentSegment;
+          currentSegment = nextSegment;
+          dwellElapsed = 0;
+          chapterLabel.textContent = chapterNames[currentSegment];
+        }
+        for (let index = 0; index < segments.length; index += 1) {
+          const distance = index - scenePosition;
+          const offset = distance * viewHeight;
+          const opacity = clamp(1 - Math.abs(distance) * .82, 0, 1);
+          if (Math.abs(offset - segmentOffsets[index]) > .05) {
+            segmentOffsets[index] = offset;
+            segments[index].style.setProperty('--offset', offset.toFixed(2) + 'px');
+          }
+          if (Math.abs(opacity - segmentOpacities[index]) > .001) {
+            segmentOpacities[index] = opacity;
+            segments[index].style.setProperty('--opacity', opacity.toFixed(3));
+          }
+        }
+        root.style.setProperty('--progress', progress.toFixed(5));
+      }
+
+      function updateReadout(time, velocity) {
+        if (time - lastUi < 90) return;
+        lastUi = time;
+        const target = currentSegment * .25;
+        const holding = Math.abs(velocity) < .006 && Math.abs(engine.current / engine.total - target) < .035;
+        holdLabel.textContent = holding ? 'Current hold' : 'Current transit';
+        holdCurrent.textContent = dwellElapsed.toFixed(1);
+        holdAuthored.textContent = dwellBySegment[currentSegment].toFixed(currentSegment % 2 ? 2 : 1);
+        segmentReadout.textContent = '0' + (currentSegment + 1) + ' / 05';
+        const bpm = Math.round(40 + clamp(Math.abs(velocity) / .14, 0, 1) * 112);
+        tempoReadout.textContent = bpm + ' bpm';
+        periodReadout.textContent = breathPeriod.toFixed(1) + ' sec';
+      }
+
+      function recordHistory(dt, velocity) {
+        historyClock += dt;
+        let sampled = false;
+        while (historyClock >= 1 / 30) {
+          historyClock -= 1 / 30;
+          samplePacing(ghostTime);
+          historyActual[historyHead] = velocity;
+          historyGhost[historyHead] = samplePacing.velocity;
+          const take = selectedTake();
+          if (take) {
+            const curveTime = replaying && replaying.id === take.id ? replayTime : takeGhostTime;
+            sampleTake(take, curveTime);
+            historyTake[historyHead] = sampleTake.velocity;
+          } else historyTake[historyHead] = 0;
+          historyHead = (historyHead + 1) % HISTORY;
+          if (historyCount < HISTORY) historyCount += 1;
+          sampled = true;
+        }
+        return sampled;
+      }
+
+      function frame(progress, dt, velocity, time) {
+        if (recording) recording.raw.push({ t: Math.max(0, time - recording.started), scalar: progress });
+        if (reduced || deterministic) return;
+        ghostTime = Math.min(pacingEnd, autopilot ? autoTime : ghostTime + dt);
+        const take = selectedTake();
+        if (take) takeGhostTime = Math.min(takeDuration(take), replaying && replaying.id === take.id ? replayTime : takeGhostTime + dt * 1000);
+        updateSegments(progress);
+        const target = currentSegment * .25;
+        const holding = Math.abs(velocity) < .006 && Math.abs(progress - target) < .035;
+        if (holding) dwellElapsed += dt;
+        else if (wasHolding) dwellElapsed = 0;
+        wasHolding = holding;
+        const speed = clamp(Math.abs(velocity) / .14, 0, 1);
+        metronomePhase += dt * Math.PI * 2 * (.66 + speed * 1.85);
+        breathPeriod = 4.8 - speed * 3.45;
+        breathPhase += dt * Math.PI * 2 / breathPeriod;
+        const scenePosition = progress * 4;
+        if (Math.abs(scenePosition - 1) < 1.1) drawMetronome(metronome, metronomeCanvas, metronomePhase, velocity, false);
+        if (Math.abs(scenePosition - 3) < 1.1) drawBreath(breath, breathCanvas, breathPhase, breathPeriod, false);
+        if (recordHistory(dt, velocity)) drawChart();
+        updateReadout(time, velocity);
+      }
+
+      function toggleAnnotation() { annotation.classList.toggle('is-visible'); }
+
+      const engine = new ManderMotion({ lengthVh: 500, onInput: releaseFromInput, onFrame: frame });
+
+      addEventListener('keydown', event => {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.target instanceof HTMLInputElement) return;
+        if (event.key === 'r' || event.key === 'R') {
+          event.preventDefault();
+          if (recording) stopRecording();
+          else startRecording();
+        } else if (event.key === 'g' || event.key === 'G') {
+          event.preventDefault();
+          if (!reduced) setAutopilot(!autopilot);
+        } else if (event.key === 'a' || event.key === 'A') {
+          event.preventDefault();
+          releaseFromInput();
+          toggleAnnotation();
+        } else if (autopilot || replaying) {
+          releaseFromInput();
+        }
+      }, true);
+      engageButton.addEventListener('click', () => { if (!reduced) setAutopilot(!autopilot); });
+      takeExport.addEventListener('click', () => { releaseFromInput(); exportSelectedTake(); });
+      annotationClose.addEventListener('click', toggleAnnotation);
+      addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) return;
+        if (autopilot) setAutopilot(false);
+        if (replaying) stopTakeReplay();
+        if (recording) stopRecording();
+      });
+
+      window.__timeline = value => {
+        deterministic = true;
+        setAutopilot(false);
+        if (replaying) stopTakeReplay();
+        deterministic = true;
+        const progress = clamp(Number(value) || 0, 0, 1);
+        engine.scrollTo(progress * engine.total, true);
+        updateSegments(progress);
+        const segment = clamp(Math.round(progress * 4), 0, 4);
+        if (!reduced) {
+          drawMetronome(metronome, metronomeCanvas, progress * Math.PI * 8, .04, false);
+          drawBreath(breath, breathCanvas, progress * Math.PI * 6, 4.8 - progress * 2.1, false);
+          drawChart();
+        }
+        return { progress, segment: segment + 1, driver: reduced ? 'reduced' : 'human', authoredDwell: dwellBySegment[segment] };
+      };
+
+      window.__autopilot = value => setAutopilot(Boolean(value));
+      window.__record = value => Boolean(value) ? startRecording() : stopRecording();
+      window.__playTake = index => setTakeReplay(index);
+
+      loadTakes();
+      renderTakes();
+      if (reduced) {
+        body.classList.add('reduced');
+        driverLabel.textContent = 'Driver: Reduced';
+        engageButton.textContent = 'Autopilot unavailable';
+        engageButton.disabled = true;
+      }
+      resize();
+      updateSegments(0);
+      samplePacing(0);
+      drawMetronome(metronome, metronomeCanvas, 0, 0, false);
+      drawBreath(breath, breathCanvas, 0, breathPeriod, false);
+      drawChart();
+      engine.start();
+      console.info('[ManderMotion] boot / one scalar / inertial human input');
+      console.info('[Study 07] pacing keyframes ' + pacing.length + ' / duration ' + pacingEnd.toFixed(1) + 's');
+      console.info('[Study 07] reduced ' + reduced + ' / DPR cap ' + dpr.toFixed(2));
+      console.info('[Study 07] hooks ready / window.__timeline(t) / window.__autopilot(bool) / window.__record(bool) / window.__playTake(i)');
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1d1f1a">
+  <title>Study 09 / A million, exactly</title>
+  <style>
+    :root {
+      --charcoal: #1d1f1a;
+      --charcoal-soft: #252720;
+      --cream: #eee8d8;
+      --cream-dim: #aaa998;
+      --lime: #c8ff45;
+      --line: rgba(238, 232, 216, .2);
+      --serif: "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
+      --sans: "Avenir Next Condensed", "Gill Sans", "Trebuchet MS", sans-serif;
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--charcoal); overscroll-behavior: none; }
+    body {
+      min-height: 600vh;
+      margin: 0;
+      background: var(--charcoal);
+      color: var(--cream);
+      font-family: var(--sans);
+      font-kerning: normal;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { color: inherit; font: inherit; }
+    canvas { display: block; }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      contain: strict;
+      background: var(--charcoal);
+      isolation: isolate;
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .stage::before {
+      opacity: .14;
+      background:
+        radial-gradient(circle at 48% 45%, transparent 0 38%, rgba(10, 11, 9, .5) 100%),
+        linear-gradient(90deg, rgba(238, 232, 216, .025) 1px, transparent 1px);
+      background-size: auto, 8.333vw 100%;
+    }
+
+    .stage::after {
+      opacity: .06;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.83' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+    }
+
+    #field,
+    #fallback {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #fallback { display: none; }
+
+    .masthead {
+      position: absolute;
+      z-index: 10;
+      top: max(1.15rem, env(safe-area-inset-top));
+      left: clamp(1.1rem, 2.7vw, 3rem);
+      right: clamp(1.1rem, 2.7vw, 3rem);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: start;
+      padding-bottom: .85rem;
+      border-bottom: 1px solid var(--line);
+      font-size: clamp(.58rem, .58vw, .69rem);
+      font-weight: 650;
+      letter-spacing: .2em;
+      line-height: 1.3;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .masthead__center { justify-self: center; color: var(--cream-dim); }
+    .masthead__right { justify-self: end; color: var(--cream-dim); text-align: right; }
+
+    .title-block {
+      position: absolute;
+      z-index: 8;
+      top: clamp(5.2rem, 13vh, 8rem);
+      left: clamp(1.1rem, 2.7vw, 3rem);
+      pointer-events: none;
+      animation: enter-title 700ms var(--ease-out) both;
+    }
+
+    .title-block h1 {
+      max-width: 6.6em;
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(2.3rem, 5.4vw, 6.8rem);
+      font-weight: 400;
+      line-height: .86;
+      letter-spacing: -.052em;
+    }
+
+    .title-block em { color: var(--lime); font-weight: 400; }
+    .title-block p {
+      max-width: 29rem;
+      margin: 1.15rem 0 0;
+      color: var(--cream-dim);
+      font-size: clamp(.57rem, .65vw, .72rem);
+      font-weight: 650;
+      letter-spacing: .17em;
+      line-height: 1.55;
+      text-transform: uppercase;
+    }
+
+    @keyframes enter-title {
+      from { opacity: 0; transform: translate3d(0, 1rem, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    .state-rail {
+      position: absolute;
+      z-index: 9;
+      top: 50%;
+      right: clamp(1.1rem, 2.7vw, 3rem);
+      width: clamp(8rem, 13vw, 12rem);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .state-rail__label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: .7rem;
+      color: var(--cream-dim);
+      font-size: .59rem;
+      font-weight: 650;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .state-rail__track { position: relative; height: 1px; background: var(--line); }
+    .state-rail__fill {
+      position: absolute;
+      inset: 0;
+      background: var(--lime);
+      transform: scaleX(var(--state, 0));
+      transform-origin: left;
+    }
+
+    .state-rail__ticks { display: flex; justify-content: space-between; margin-top: .62rem; }
+    .state-rail__ticks span {
+      color: var(--cream-dim);
+      font-size: .52rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .08em;
+    }
+
+    .ledger {
+      position: absolute;
+      z-index: 11;
+      left: clamp(1.1rem, 2.7vw, 3rem);
+      bottom: max(1.2rem, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: repeat(3, auto);
+      gap: 0 clamp(1.15rem, 3vw, 3.6rem);
+      min-width: min(39rem, calc(100vw - 2.2rem));
+      padding-top: .8rem;
+      border-top: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+      animation: enter-ledger 700ms 120ms var(--ease-out) both;
+    }
+
+    @keyframes enter-ledger {
+      from { opacity: 0; transform: translate3d(0, .7rem, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    body.timeline-controlled .title-block,
+    body.timeline-controlled .ledger { animation: none; }
+
+    .metric__label {
+      display: block;
+      margin-bottom: .26rem;
+      color: var(--cream-dim);
+      font-size: .54rem;
+      font-weight: 650;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .metric__value {
+      display: block;
+      font-family: var(--serif);
+      font-size: clamp(1.03rem, 1.65vw, 1.48rem);
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .metric__note {
+      display: block;
+      margin-top: .28rem;
+      color: var(--cream-dim);
+      font-size: .5rem;
+      letter-spacing: .12em;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .controls {
+      position: absolute;
+      z-index: 12;
+      right: clamp(1.1rem, 2.7vw, 3rem);
+      bottom: max(1.2rem, env(safe-area-inset-bottom));
+      display: flex;
+      gap: .45rem;
+    }
+
+    .control {
+      min-height: 2.8rem;
+      padding: 0 .9rem;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(29, 31, 26, .72);
+      cursor: pointer;
+      font-size: .57rem;
+      font-weight: 700;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 100ms var(--ease-out), background-color 160ms var(--ease-out);
+    }
+
+    .control:hover,
+    .control:focus-visible { color: var(--lime); border-color: var(--lime); outline: none; }
+    .control:active { transform: scale(.97); }
+    .control[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); color: var(--charcoal); }
+    .key { color: var(--cream-dim); }
+
+    .proof-note,
+    .annotation {
+      position: absolute;
+      z-index: 13;
+      right: clamp(1.1rem, 2.7vw, 3rem);
+      width: min(28rem, calc(100vw - 2.2rem));
+      border-top: 1px solid var(--lime);
+      background: rgba(29, 31, 26, .92);
+      opacity: 0;
+      transform: translate3d(0, .75rem, 0);
+      pointer-events: none;
+      transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
+    }
+
+    .proof-note { bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4rem)); padding: .8rem 0 0; }
+    .annotation { top: clamp(5.5rem, 14vh, 8.5rem); padding-top: .8rem; }
+    body.proof-open .proof-note,
+    body.annotation-open .annotation { opacity: 1; transform: translate3d(0, 0, 0); pointer-events: auto; }
+
+    .panel-kicker {
+      margin: 0 0 .6rem;
+      color: var(--lime);
+      font-size: .57rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .proof-note p,
+    .annotation p {
+      margin: 0 0 .7rem;
+      color: var(--cream-dim);
+      font-size: .65rem;
+      letter-spacing: .095em;
+      line-height: 1.55;
+      text-transform: uppercase;
+    }
+
+    .annotation ol { margin: 0; padding: 0; list-style: none; counter-reset: pass; }
+    .annotation li {
+      counter-increment: pass;
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: .65rem;
+      padding: .53rem 0;
+      border-top: 1px solid var(--line);
+      color: var(--cream-dim);
+      font-size: .62rem;
+      letter-spacing: .085em;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+    .annotation li::before { content: "0" counter(pass); color: var(--cream); }
+
+    .fallback-badge {
+      position: absolute;
+      z-index: 15;
+      right: clamp(1.1rem, 2.7vw, 3rem);
+      top: clamp(5.5rem, 14vh, 8.5rem);
+      display: none;
+      width: min(24rem, calc(100vw - 2.2rem));
+      padding-top: .75rem;
+      border-top: 1px solid var(--lime);
+      color: var(--cream);
+      font-family: var(--serif);
+      font-size: clamp(1rem, 1.8vw, 1.42rem);
+      line-height: 1.25;
+    }
+
+    body.is-fallback { min-height: 100vh; overflow: hidden; }
+    body.is-fallback #field,
+    body.is-fallback .ledger,
+    body.is-fallback .state-rail,
+    body.is-fallback .controls { display: none; }
+    body.is-fallback #fallback,
+    body.is-fallback .fallback-badge { display: block; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 780px) {
+      .masthead { grid-template-columns: 1fr 1fr; }
+      .masthead__center { display: none; }
+      .title-block { top: 5.3rem; }
+      .title-block p { max-width: 22rem; }
+      .state-rail { top: auto; right: 1.1rem; bottom: 7.7rem; width: 7rem; transform: none; }
+      .ledger { grid-template-columns: 1fr 1fr; gap: .8rem 1.2rem; min-width: 0; right: 1.1rem; }
+      .ledger .metric:last-child { grid-column: 1 / -1; }
+      .controls { bottom: 1.1rem; }
+      .control { min-height: 2.55rem; padding: 0 .7rem; }
+      .key { display: none; }
+    }
+
+    @media (max-width: 520px) {
+      .title-block h1 { font-size: clamp(2.2rem, 13vw, 4rem); }
+      .title-block p { max-width: 18rem; }
+      .ledger { bottom: 4.6rem; }
+      .metric__note { display: none; }
+      .proof-note { bottom: 7.5rem; }
+      .annotation { top: 4.9rem; }
+      .fallback-badge { top: auto; bottom: 1.2rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body { min-height: 100vh; overflow: hidden; }
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .masthead__right::after { content: " / FORMED M HELD"; color: var(--lime); }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="One million particle WebGPU study">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <canvas id="fallback" aria-hidden="true"></canvas>
+
+    <header class="masthead">
+      <span>Study 09</span>
+      <span class="masthead__center">WebGPU compute specimen</span>
+      <span class="masthead__right">Scroll drives state</span>
+    </header>
+
+    <section class="title-block" aria-labelledby="title">
+      <h1 id="title">A million, <em>exactly.</em></h1>
+      <p>Free field to letterform to gate. One scalar, counted from memory.</p>
+    </section>
+
+    <aside class="state-rail" aria-label="Timeline state">
+      <div class="state-rail__label"><span id="stateName">Free field</span><span id="stateValue">0.000</span></div>
+      <div class="state-rail__track"><i class="state-rail__fill"></i></div>
+      <div class="state-rail__ticks"><span>0</span><span>.35</span><span>.65</span><span>.85</span><span>1</span></div>
+    </aside>
+
+    <section class="ledger" aria-label="Live render facts">
+      <div class="metric">
+        <span class="metric__label">Particles live</span>
+        <span class="metric__value" id="particleCount">Allocating</span>
+        <span class="metric__note" id="countBasis">Awaiting GPU buffer</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label" id="timingLabel">Compute + render</span>
+        <span class="metric__value" id="frameTime">0.00 ms</span>
+        <span class="metric__note" id="timingBasis">GPU timestamp query</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">Dispatch</span>
+        <span class="metric__value" id="dispatchCount">3,907 × 256</span>
+        <span class="metric__note" id="tierNote">One million tier</span>
+      </div>
+    </section>
+
+    <nav class="controls" aria-label="Study controls">
+      <button class="control" id="annotationToggle" type="button" aria-pressed="false" aria-controls="annotationPanel"><span class="key">A / </span>Annotation</button>
+      <button class="control" id="proofToggle" type="button" aria-pressed="false" aria-controls="proofPanel"><span class="key">P / </span>Count proof</button>
+    </nav>
+
+    <aside class="proof-note" id="proofPanel" aria-live="polite" aria-hidden="true">
+      <h2 class="panel-kicker">Count proof / sparse read</h2>
+      <p id="proofMath">Indexing source buffer. No particles are copied or invented.</p>
+      <p id="proofResult"></p>
+    </aside>
+
+    <aside class="annotation" id="annotationPanel" aria-label="Implementation annotation" aria-hidden="true">
+      <h2 class="panel-kicker">Why WebGPU</h2>
+      <p>One million independent state updates belong beside the pixels, not in a JavaScript loop.</p>
+      <ol>
+        <li>CPU samples a serif M. mask once and uploads target coordinates.</li>
+        <li>WGSL compute reads and writes one 32-byte particle struct.</li>
+        <li>Dispatch uses 256 threads per workgroup with bounds checking.</li>
+        <li>Curl-style flow, glyph attraction, ring attraction, and scroll agitation blend per frame.</li>
+        <li>WGSL render expands each stored position into one small triangle.</li>
+        <li>The HUD divides the actual GPU buffer byte size by the struct stride.</li>
+      </ol>
+    </aside>
+
+    <div class="fallback-badge" role="status">Live version needs WebGPU (Chrome/Edge). This is a still.</div>
+    <p class="sr-only" id="statusText" aria-live="polite"></p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const ONE_MILLION = 1_000_000;
+      const HALF_MILLION = 500_000;
+      const PARTICLE_STRIDE = 32;
+      const WORKGROUP_SIZE = 256;
+      const PROOF_STEP = 32;
+      const PROOF_OFFSET = 16;
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+      const beats = [
+        { name: "free", t: 0 },
+        { name: "formed-m", t: 0.35 },
+        { name: "hold", t: 0.65 },
+        { name: "dissolve", t: 0.85 },
+        { name: "ring", t: 1 }
+      ];
+      let fallbackActive = false;
+      let resolveFirstRender;
+      const firstRenderReady = new Promise(resolve => { resolveFirstRender = resolve; });
+      const fontsReady = document.fonts?.ready?.catch(() => undefined) ?? Promise.resolve();
+
+      window.__study = {
+        version: 1,
+        ready: Promise.all([fontsReady, firstRenderReady]).then(() => undefined),
+        beats,
+        mode: () => fallbackActive ? "fallback" : (reducedMotion.matches ? "static" : "animated")
+      };
+
+      function markFirstRenderReady() {
+        if (!resolveFirstRender) return;
+        resolveFirstRender();
+        resolveFirstRender = null;
+      }
+
+      const ui = {
+        field: document.querySelector("#field"),
+        fallback: document.querySelector("#fallback"),
+        particleCount: document.querySelector("#particleCount"),
+        countBasis: document.querySelector("#countBasis"),
+        frameTime: document.querySelector("#frameTime"),
+        timingLabel: document.querySelector("#timingLabel"),
+        timingBasis: document.querySelector("#timingBasis"),
+        dispatchCount: document.querySelector("#dispatchCount"),
+        tierNote: document.querySelector("#tierNote"),
+        stateName: document.querySelector("#stateName"),
+        stateValue: document.querySelector("#stateValue"),
+        proofToggle: document.querySelector("#proofToggle"),
+        annotationToggle: document.querySelector("#annotationToggle"),
+        proofPanel: document.querySelector("#proofPanel"),
+        annotationPanel: document.querySelector("#annotationPanel"),
+        proofMath: document.querySelector("#proofMath"),
+        proofResult: document.querySelector("#proofResult"),
+        statusText: document.querySelector("#statusText")
+      };
+
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const formatCount = n => new Intl.NumberFormat("en-GB").format(n);
+      const stateNames = [
+        [0.35, "Free field"],
+        [0.65, "Forming M."],
+        [0.85, "Held / breathing"],
+        [0.97, "Controlled dissolve"],
+        [1.01, "Gate ring"]
+      ];
+
+      let proofOpen = false;
+      let annotationOpen = false;
+      let manualTimeline = null;
+      let currentState = reducedMotion.matches ? 0.58 : 0;
+
+      function setPanel(which, force) {
+        if (which === "proof") {
+          proofOpen = force ?? !proofOpen;
+          document.body.classList.toggle("proof-open", proofOpen);
+          ui.proofToggle.setAttribute("aria-pressed", String(proofOpen));
+          ui.proofPanel.setAttribute("aria-hidden", String(!proofOpen));
+          ui.statusText.textContent = proofOpen ? "Count proof enabled" : "Count proof disabled";
+        } else {
+          annotationOpen = force ?? !annotationOpen;
+          document.body.classList.toggle("annotation-open", annotationOpen);
+          ui.annotationToggle.setAttribute("aria-pressed", String(annotationOpen));
+          ui.annotationPanel.setAttribute("aria-hidden", String(!annotationOpen));
+          ui.statusText.textContent = annotationOpen ? "Annotation opened" : "Annotation closed";
+        }
+      }
+
+      ui.proofToggle.addEventListener("click", () => setPanel("proof"));
+      ui.annotationToggle.addEventListener("click", () => setPanel("annotation"));
+      addEventListener("keydown", event => {
+        if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key.toLowerCase() === "p") setPanel("proof");
+        if (event.key.toLowerCase() === "a") setPanel("annotation");
+      });
+
+      function scrollScalar() {
+        if (reducedMotion.matches) return 0.58;
+        if (manualTimeline !== null) return manualTimeline;
+        const range = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+        return clamp(scrollY / range);
+      }
+
+      function updateStateUI(state) {
+        currentState = state;
+        document.documentElement.style.setProperty("--state", state.toFixed(5));
+        ui.stateValue.textContent = state.toFixed(3);
+        ui.stateName.textContent = stateNames.find(entry => state < entry[0])[1];
+      }
+
+      function resolveTimelineValue(value) {
+        if (typeof value !== "string") {
+          return clamp(Number.isFinite(Number(value)) ? Number(value) : 0);
+        }
+        const beat = beats.find(entry => entry.name === value);
+        if (beat) return beat.t;
+        throw new Error(`Unknown beat "${value}". Valid beats: ${beats.map(entry => entry.name).join(", ")}`);
+      }
+
+      function releaseManualTimeline() {
+        manualTimeline = null;
+        document.body.classList.remove("timeline-controlled");
+      }
+
+      window.__timeline = value => {
+        manualTimeline = resolveTimelineValue(value);
+        document.body.classList.add("timeline-controlled");
+        if (!reducedMotion.matches) {
+          const range = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+          scrollTo(0, manualTimeline * range);
+        }
+        updateStateUI(reducedMotion.matches ? 0.58 : manualTimeline);
+        ui.timingLabel.textContent = "Capture state";
+        ui.frameTime.textContent = "Locked";
+        ui.timingBasis.textContent = "Timeline-pure frame";
+        return { state: currentState, mode: window.__study.mode() };
+      };
+
+      addEventListener("wheel", releaseManualTimeline, { passive: true });
+      addEventListener("touchstart", releaseManualTimeline, { passive: true });
+      addEventListener("keydown", event => {
+        if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) releaseManualTimeline();
+      });
+
+      const COMPUTE_WGSL = /* wgsl */ `
+        struct Particle {
+          pos: vec2<f32>,
+          vel: vec2<f32>,
+          goal: vec2<f32>,
+          seed: f32,
+          kind: f32,
+        }
+
+        struct SimUniforms {
+          state: f32,
+          dt: f32,
+          time: f32,
+          scroll_velocity: f32,
+          aspect: f32,
+          count: u32,
+          reduced: f32,
+          agitation: f32,
+          viewport: vec2<f32>,
+          particle_px: f32,
+          proof: u32,
+          tier: f32,
+          seeking: f32,
+        }
+
+        @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
+        @group(0) @binding(1) var<uniform> sim: SimUniforms;
+
+        fn smooth01(v: f32) -> f32 {
+          let x = clamp(v, 0.0, 1.0);
+          return x * x * (3.0 - 2.0 * x);
+        }
+
+        fn hash11(p: f32) -> f32 {
+          return fract(sin(p * 127.1) * 43758.5453123);
+        }
+
+        fn curl_field(p: vec2<f32>, t: f32) -> vec2<f32> {
+          let ax = p.x * 2.10 + t * 0.17;
+          let ay = p.y * 2.70 - t * 0.13;
+          let bx = p.x * 1.30 - t * 0.11;
+          let by = p.y * 1.70 + t * 0.19;
+          let d_y = sin(ax) * -sin(ay) * 2.70 + 0.55 * cos(bx) * cos(by) * 1.70;
+          let d_x = cos(ax) * 2.10 * cos(ay) - 0.55 * sin(bx) * 1.30 * sin(by);
+          return normalize(vec2<f32>(d_y, -d_x) + vec2<f32>(0.0001));
+        }
+
+        fn seek_position(index: u32, particle: Particle, s: f32) -> vec2<f32> {
+          let tau = 6.28318530718;
+          let i = f32(index);
+          let free_x = (hash11(i * 0.019 + particle.seed * 11.3) * 2.0 - 1.0) * sim.aspect * 1.04;
+          let free_y = (hash11(i * 0.023 + particle.seed * 17.9) * 2.0 - 1.0) * 1.02;
+          let drift_angle = tau * (hash11(i * 0.011 + particle.seed * 7.1) + s * 0.18);
+          let drift_radius = 0.04 + 0.08 * hash11(i * 0.031 + particle.seed * 5.7);
+          let free_target = vec2<f32>(free_x, free_y) + vec2<f32>(cos(drift_angle), sin(drift_angle)) * drift_radius;
+
+          let form = smooth01((s - 0.05) / 0.30);
+          let release = smooth01((s - 0.70) / 0.18);
+          let ring_blend = smooth01((s - 0.82) / 0.18);
+          let pure_time = s * 12.0;
+          let aspect_goal = vec2<f32>(particle.goal.x * sim.aspect, particle.goal.y);
+          let breathe = 1.0 + 0.009 * sin(pure_time * 1.15 + particle.seed * 1.7) * smooth01((s - 0.38) / 0.16) * (1.0 - release);
+          let glyph_target = aspect_goal * breathe;
+
+          let dissolve_angle = tau * hash11(i * 0.013 + particle.seed * 19.1);
+          let dissolve_distance = 0.22 + 0.48 * particle.seed;
+          let dissolve_target = glyph_target + vec2<f32>(cos(dissolve_angle) * sim.aspect, sin(dissolve_angle)) * dissolve_distance + free_target * 0.22;
+
+          let ring_angle = tau * (i / max(1.0, f32(sim.count))) + particle.seed * 0.006;
+          let ring_radius = 0.735 + 0.006 * sin(pure_time * 0.8 + particle.seed * tau);
+          let ring_target = vec2<f32>(cos(ring_angle) * ring_radius * sim.aspect, sin(ring_angle) * ring_radius);
+          let formed = mix(free_target, glyph_target, form);
+          let released = mix(formed, dissolve_target, release);
+          return mix(released, ring_target, ring_blend);
+        }
+
+        @compute @workgroup_size(256)
+        fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+          let index = id.x;
+          if (index >= sim.count) { return; }
+
+          var particle = particles[index];
+          let s = sim.state;
+          let form = smooth01((s - 0.05) / 0.30);
+          let release = smooth01((s - 0.70) / 0.18);
+          let ring_blend = smooth01((s - 0.82) / 0.18);
+          let glyph_weight = form * (1.0 - release);
+          let tau = 6.28318530718;
+          let angle = tau * (f32(index) / max(1.0, f32(sim.count))) + particle.seed * 0.006;
+          let ring_radius = 0.735 + 0.006 * sin(sim.time * 0.8 + particle.seed * tau);
+          let ring_target = vec2<f32>(cos(angle) * ring_radius * sim.aspect, sin(angle) * ring_radius);
+          let breathe = 1.0 + 0.009 * sin(sim.time * 1.15 + particle.seed * 1.7) * smooth01((s - 0.38) / 0.16) * (1.0 - release);
+          let aspect_goal = vec2<f32>(particle.goal.x * sim.aspect, particle.goal.y);
+          let glyph_target = aspect_goal * breathe;
+
+          let flow = curl_field(particle.pos * vec2<f32>(0.82, 1.0), sim.time);
+          let phase = hash11(f32(index) * 0.017 + floor(sim.time * 9.0));
+          let jolt = vec2<f32>(cos(phase * tau), sin(phase * tau)) * sim.agitation;
+          let free_force = flow * (0.19 + 0.34 * sim.agitation) + jolt * 0.42;
+          let glyph_force = (glyph_target - particle.pos) * (1.6 + glyph_weight * 4.4);
+          let ring_force = (ring_target - particle.pos) * 5.2;
+          let attraction = glyph_force * glyph_weight + ring_force * ring_blend;
+          let free_weight = clamp(1.0 - max(glyph_weight, ring_blend), 0.0, 1.0);
+
+          if (sim.reduced > 0.5) {
+            particle.pos = aspect_goal;
+            particle.vel = vec2<f32>(0.0);
+          } else if (sim.seeking > 0.5) {
+            particle.pos = seek_position(index, particle, s);
+            particle.vel = vec2<f32>(0.0);
+          } else {
+            particle.vel += (free_force * free_weight + attraction) * sim.dt;
+            let drag = mix(0.984, 0.925, max(glyph_weight, ring_blend));
+            particle.vel *= pow(drag, sim.dt * 60.0);
+            particle.pos += particle.vel * sim.dt;
+
+            let x_limit = sim.aspect * 1.08;
+            if (particle.pos.x > x_limit) { particle.pos.x = -x_limit; }
+            if (particle.pos.x < -x_limit) { particle.pos.x = x_limit; }
+            if (particle.pos.y > 1.08) { particle.pos.y = -1.08; }
+            if (particle.pos.y < -1.08) { particle.pos.y = 1.08; }
+          }
+
+          particles[index] = particle;
+        }
+      `;
+
+      const RENDER_WGSL = /* wgsl */ `
+        struct Particle {
+          pos: vec2<f32>,
+          vel: vec2<f32>,
+          goal: vec2<f32>,
+          seed: f32,
+          kind: f32,
+        }
+
+        struct SimUniforms {
+          state: f32,
+          dt: f32,
+          time: f32,
+          scroll_velocity: f32,
+          aspect: f32,
+          count: u32,
+          reduced: f32,
+          agitation: f32,
+          viewport: vec2<f32>,
+          particle_px: f32,
+          proof: u32,
+          tier: f32,
+          seeking: f32,
+        }
+
+        struct VertexOut {
+          @builtin(position) position: vec4<f32>,
+          @location(0) colour: vec4<f32>,
+        }
+
+        @group(0) @binding(0) var<storage, read> particles: array<Particle>;
+        @group(0) @binding(1) var<uniform> sim: SimUniforms;
+
+        @vertex
+        fn vs(@builtin(vertex_index) vertex: u32, @builtin(instance_index) index: u32) -> VertexOut {
+          let particle = particles[index];
+          let side = u32(ceil(sqrt(f32(sim.count))));
+          let gx = index % side;
+          let gy = index / side;
+          let chosen = ((gx % 32u == 0u) && (gy % 32u == 0u)) || ((gx % 32u == 16u) && (gy % 32u == 16u));
+          let hidden = sim.proof == 1u && !chosen;
+          var centre = vec2<f32>(particle.pos.x / sim.aspect, particle.pos.y);
+          if (hidden) { centre = vec2<f32>(3.0, 3.0); }
+
+          let triangle = array<vec2<f32>, 3>(
+            vec2<f32>(-0.58, -0.46),
+            vec2<f32>(0.58, -0.46),
+            vec2<f32>(0.0, 0.66)
+          );
+          let proof_scale = select(1.0, 2.5, sim.proof == 1u);
+          let px = sim.particle_px * proof_scale;
+          let offset = triangle[vertex] * vec2<f32>(px * 2.0 / sim.viewport.x, px * 2.0 / sim.viewport.y);
+
+          var out: VertexOut;
+          out.position = vec4<f32>(centre + offset, 0.0, 1.0);
+          let cream = vec3<f32>(0.933, 0.910, 0.835);
+          let lime = vec3<f32>(0.765, 1.0, 0.235);
+          let colour = mix(cream, lime, step(0.5, particle.kind));
+          out.colour = vec4<f32>(colour, select(0.58, 0.92, sim.proof == 1u));
+          return out;
+        }
+
+        @fragment
+        fn fs(in: VertexOut) -> @location(0) vec4<f32> { return in.colour; }
+      `;
+
+      function collectGlyphTargets(count, aspect, holdFormed) {
+        const width = 1200;
+        const height = 800;
+        const mask = document.createElement("canvas");
+        mask.width = width;
+        mask.height = height;
+        const context = mask.getContext("2d", { willReadFrequently: true });
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = "#fff";
+        context.textBaseline = "alphabetic";
+        context.font = "700 660px Georgia, serif";
+        context.fillText("M", 108, 668);
+        const mData = context.getImageData(0, 0, width, height).data;
+        context.clearRect(0, 0, width, height);
+        context.font = "700 660px Georgia, serif";
+        context.fillText(".", 877, 668);
+        const dotData = context.getImageData(0, 0, width, height).data;
+        const mPoints = [];
+        const dotPoints = [];
+
+        for (let y = 74; y < 710; y += 3) {
+          for (let x = 70; x < 1060; x += 3) {
+            const offset = (y * width + x) * 4 + 3;
+            if (mData[offset] > 40) mPoints.push(x, y);
+            if (dotData[offset] > 40) dotPoints.push(x, y);
+          }
+        }
+
+        const data = new Float32Array(count * 8);
+        let randomState = 0x09f3a21d;
+        const random = () => {
+          randomState ^= randomState << 13;
+          randomState ^= randomState >>> 17;
+          randomState ^= randomState << 5;
+          return (randomState >>> 0) / 4294967296;
+        };
+        const dotRatio = dotPoints.length / Math.max(1, dotPoints.length + mPoints.length);
+
+        for (let i = 0; i < count; i++) {
+          const base = i * 8;
+          const isDot = i < Math.floor(count * dotRatio);
+          const source = isDot ? dotPoints : mPoints;
+          const point = Math.floor(random() * (source.length / 2)) * 2;
+          const x = source[point] + (random() - .5) * 3;
+          const y = source[point + 1] + (random() - .5) * 3;
+          const goalX = ((x / width) * 2 - 1) * 1.18;
+          const goalY = (1 - (y / height) * 2) * 1.04;
+          data[base] = holdFormed ? goalX * aspect : (random() * 2 - 1) * aspect * 1.04;
+          data[base + 1] = holdFormed ? goalY : random() * 2.04 - 1.02;
+          data[base + 2] = holdFormed ? 0 : (random() - .5) * .035;
+          data[base + 3] = holdFormed ? 0 : (random() - .5) * .035;
+          data[base + 4] = goalX;
+          data[base + 5] = goalY;
+          data[base + 6] = random();
+          data[base + 7] = isDot ? 1 : 0;
+        }
+        return data;
+      }
+
+      function proofSampleCount(count) {
+        const side = Math.ceil(Math.sqrt(count));
+        let selected = 0;
+        for (let index = 0; index < count; index++) {
+          const x = index % side;
+          const y = Math.floor(index / side);
+          if ((x % PROOF_STEP === 0 && y % PROOF_STEP === 0) ||
+              (x % PROOF_STEP === PROOF_OFFSET && y % PROOF_STEP === PROOF_OFFSET)) selected++;
+        }
+        return { selected, side };
+      }
+
+      class MillionField {
+        constructor() {
+          this.device = null;
+          this.context = null;
+          this.format = null;
+          this.particleBuffer = null;
+          this.uniformBuffer = null;
+          this.computeBindGroup = null;
+          this.renderBindGroup = null;
+          this.computePipeline = null;
+          this.renderPipeline = null;
+          this.particleCount = 0;
+          this.captureParticleBuffer = null;
+          this.captureParticleCount = 0;
+          this.captureComputeBindGroup = null;
+          this.captureRenderBindGroup = null;
+          this.populationUiKey = "";
+          this.lastTime = performance.now();
+          this.lastState = scrollScalar();
+          this.scrollVelocity = 0;
+          this.frameIndex = 0;
+          this.frameDurations = [];
+          this.tierEvaluated = false;
+          this.hasTimestamps = false;
+          this.gpuMs = 0;
+          this.cpuSubmitMs = 0;
+          this.querySet = null;
+          this.queryResolve = null;
+          this.readSlots = [];
+          this.running = true;
+          this.stopped = false;
+          this.uniformData = new ArrayBuffer(64);
+          this.uniformFloats = new Float32Array(this.uniformData);
+          this.uniformUints = new Uint32Array(this.uniformData);
+          this.resizeObserver = new ResizeObserver(() => this.resize());
+          this.firstFramePromise = new Promise(resolve => { this.resolveFirstFrame = resolve; });
+          this.firstFrameStarted = false;
+        }
+
+        async init() {
+          const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+          if (!adapter) throw new Error("No WebGPU adapter");
+          const requiredFeatures = [];
+          if (adapter.features.has("timestamp-query")) requiredFeatures.push("timestamp-query");
+          this.device = await adapter.requestDevice({ requiredFeatures });
+          this.hasTimestamps = this.device.features.has("timestamp-query");
+          this.context = ui.field.getContext("webgpu");
+          this.format = navigator.gpu.getPreferredCanvasFormat();
+          this.uniformBuffer = this.device.createBuffer({
+            label: "64-byte simulation uniforms",
+            size: 64,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+
+          const computeBindGroupLayout = this.device.createBindGroupLayout({
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+              { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
+            ]
+          });
+          const renderBindGroupLayout = this.device.createBindGroupLayout({
+            entries: [
+              { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+              { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+            ]
+          });
+          const computePipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [computeBindGroupLayout] });
+          const renderPipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [renderBindGroupLayout] });
+          this.computePipeline = await this.device.createComputePipelineAsync({
+            label: "Curl flow and authored attractor compute",
+            layout: computePipelineLayout,
+            compute: { module: this.device.createShaderModule({ code: COMPUTE_WGSL }), entryPoint: "main" }
+          });
+          this.renderPipeline = await this.device.createRenderPipelineAsync({
+            label: "One triangle per particle",
+            layout: renderPipelineLayout,
+            vertex: { module: this.device.createShaderModule({ code: RENDER_WGSL }), entryPoint: "vs" },
+            fragment: {
+              module: this.device.createShaderModule({ code: RENDER_WGSL }),
+              entryPoint: "fs",
+              targets: [{
+                format: this.format,
+                blend: {
+                  color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                  alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha" }
+                }
+              }]
+            },
+            primitive: { topology: "triangle-list" }
+          });
+          this.computeBindGroupLayout = computeBindGroupLayout;
+          this.renderBindGroupLayout = renderBindGroupLayout;
+
+          if (this.hasTimestamps) this.setupQueries();
+          this.resizeObserver.observe(document.documentElement);
+          this.resize();
+          await this.buildPopulation(ONE_MILLION);
+          this.device.lost.then(info => {
+            if (this.stopped) return;
+            this.stopped = true;
+            this.running = false;
+            this.resizeObserver.disconnect();
+            startFallback(`WebGPU device lost: ${info.message || "unknown reason"}`);
+          });
+          const beginFirstFrame = time => {
+            if (this.firstFrameStarted) return;
+            this.firstFrameStarted = true;
+            this.frame(time);
+          };
+          requestAnimationFrame(beginFirstFrame);
+          setTimeout(() => beginFirstFrame(performance.now()), 150);
+          await this.firstFramePromise;
+        }
+
+        setupQueries() {
+          this.querySet = this.device.createQuerySet({ type: "timestamp", count: 4 });
+          this.queryResolve = this.device.createBuffer({
+            size: 32,
+            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC
+          });
+          this.readSlots = Array.from({ length: 3 }, () => ({
+            busy: false,
+            buffer: this.device.createBuffer({
+              size: 32,
+              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+            })
+          }));
+        }
+
+        resize() {
+          if (!this.device || !this.context) return;
+          const dpr = Math.min(devicePixelRatio || 1, 1.5);
+          const width = Math.max(1, Math.floor(innerWidth * dpr));
+          const height = Math.max(1, Math.floor(innerHeight * dpr));
+          if (ui.field.width !== width || ui.field.height !== height) {
+            ui.field.width = width;
+            ui.field.height = height;
+            this.context.configure({
+              device: this.device,
+              format: this.format,
+              alphaMode: "opaque"
+            });
+          }
+        }
+
+        async buildPopulation(count) {
+          this.running = false;
+          ui.particleCount.textContent = "Allocating";
+          ui.countBasis.textContent = `${formatCount(count * PARTICLE_STRIDE)} bytes requested`;
+          // rAF never fires in hidden tabs; setTimeout keeps boot from parking until focus.
+          await new Promise(resolve => { requestAnimationFrame(resolve); setTimeout(resolve, 150); });
+          const aspect = innerWidth / Math.max(1, innerHeight);
+          const particles = collectGlyphTargets(count, aspect, reducedMotion.matches);
+          const nextBuffer = this.device.createBuffer({
+            label: `${formatCount(count)} particles at ${PARTICLE_STRIDE} bytes each`,
+            size: particles.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+          });
+          this.device.queue.writeBuffer(nextBuffer, 0, particles);
+          const previousBuffer = this.particleBuffer;
+          this.particleBuffer = nextBuffer;
+          this.particleCount = this.particleBuffer.size / PARTICLE_STRIDE;
+          this.computeBindGroup = this.device.createBindGroup({
+            layout: this.computeBindGroupLayout,
+            entries: [
+              { binding: 0, resource: { buffer: this.particleBuffer } },
+              { binding: 1, resource: { buffer: this.uniformBuffer } }
+            ]
+          });
+          this.renderBindGroup = this.device.createBindGroup({
+            layout: this.renderBindGroupLayout,
+            entries: [
+              { binding: 0, resource: { buffer: this.particleBuffer } },
+              { binding: 1, resource: { buffer: this.uniformBuffer } }
+            ]
+          });
+          if (!this.captureParticleBuffer) {
+            this.captureParticleBuffer = this.particleBuffer;
+            this.captureParticleCount = this.particleCount;
+            this.captureComputeBindGroup = this.computeBindGroup;
+            this.captureRenderBindGroup = this.renderBindGroup;
+          }
+          if (previousBuffer && previousBuffer !== this.captureParticleBuffer) previousBuffer.destroy();
+          this.updatePopulationUI(this.particleCount, false);
+          this.running = true;
+          this.lastTime = performance.now();
+          this.lastState = scrollScalar();
+        }
+
+        updatePopulationUI(count, seeking) {
+          const key = `${count}:${seeking}`;
+          if (key === this.populationUiKey) return;
+          this.populationUiKey = key;
+          const proof = proofSampleCount(count);
+          ui.particleCount.textContent = formatCount(count);
+          ui.countBasis.textContent = `GPUBuffer.size ÷ ${PARTICLE_STRIDE} bytes`;
+          ui.dispatchCount.textContent = `${formatCount(Math.ceil(count / WORKGROUP_SIZE))} × ${WORKGROUP_SIZE}`;
+          ui.tierNote.textContent = seeking
+            ? `${formatCount(count)} capture tier / fixed at boot`
+            : count === ONE_MILLION ? "One million tier" : "500k auto tier / frame budget";
+          ui.proofMath.textContent = `${formatCount(count)} IDs map row-major to a ${proof.side}² logical grid. Render x,y mod 32 = 0,0 or 16,16.`;
+          ui.proofResult.textContent = `${formatCount(proof.selected)} source IDs visible. Same storage buffer, same simulation, sparse render only.`;
+        }
+
+        writeUniforms(state, dt, elapsed, particleCount, seeking) {
+          const floats = this.uniformFloats;
+          const uints = this.uniformUints;
+          floats[0] = state;
+          floats[1] = seeking ? 0 : dt;
+          floats[2] = seeking ? state * 12 : elapsed;
+          floats[3] = seeking ? 0 : this.scrollVelocity;
+          floats[4] = innerWidth / Math.max(1, innerHeight);
+          uints[5] = particleCount;
+          floats[6] = reducedMotion.matches ? 1 : 0;
+          floats[7] = seeking ? 0 : clamp(Math.abs(this.scrollVelocity) * 1.8, 0, 1);
+          floats[8] = ui.field.width;
+          floats[9] = ui.field.height;
+          floats[10] = particleCount === ONE_MILLION ? .88 : 1.08;
+          uints[11] = proofOpen ? 1 : 0;
+          floats[12] = particleCount / ONE_MILLION;
+          floats[13] = seeking ? 1 : 0;
+          this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+        }
+
+        readTimestamps(slot) {
+          slot.busy = true;
+          slot.buffer.mapAsync(GPUMapMode.READ).then(() => {
+            const values = new BigUint64Array(slot.buffer.getMappedRange());
+            const compute = Number(values[1] - values[0]) / 1e6;
+            const render = Number(values[3] - values[2]) / 1e6;
+            this.gpuMs += (compute + render - this.gpuMs) * .22;
+            slot.buffer.unmap();
+            slot.busy = false;
+          }).catch(() => { slot.busy = false; });
+        }
+
+        maybeTierDown() {
+          if (manualTimeline !== null || this.tierEvaluated || this.particleCount !== ONE_MILLION || this.frameDurations.length < 90) return;
+          this.tierEvaluated = true;
+          const sorted = [...this.frameDurations].sort((a, b) => a - b);
+          const p60 = sorted[Math.floor(sorted.length * .60)];
+          const measured = this.hasTimestamps && this.gpuMs > 0 ? this.gpuMs : p60;
+          if (measured > 18.8) {
+            ui.tierNote.textContent = "Profiling selected 500k tier";
+            ui.statusText.textContent = "Frame budget exceeded. Switching to an honest 500,000 particle tier.";
+            this.buildPopulation(HALF_MILLION);
+          }
+        }
+
+        frame(now) {
+          if (this.stopped) return;
+          if (!this.running) {
+            requestAnimationFrame(time => this.frame(time));
+            return;
+          }
+          const frameDelta = Math.min(50, Math.max(.1, now - this.lastTime));
+          const dt = Math.min(.033, frameDelta / 1000);
+          const state = scrollScalar();
+          const rawVelocity = (state - this.lastState) / Math.max(.001, dt);
+          this.scrollVelocity += (rawVelocity - this.scrollVelocity) * Math.min(1, dt * 10);
+          this.lastState = state;
+          this.lastTime = now;
+          updateStateUI(state);
+          const seeking = manualTimeline !== null && !reducedMotion.matches;
+          const particleCount = seeking ? this.captureParticleCount : this.particleCount;
+          const computeBindGroup = seeking ? this.captureComputeBindGroup : this.computeBindGroup;
+          const renderBindGroup = seeking ? this.captureRenderBindGroup : this.renderBindGroup;
+          this.updatePopulationUI(particleCount, seeking);
+          this.writeUniforms(state, dt, now / 1000, particleCount, seeking);
+
+          const encodeStart = performance.now();
+          const encoder = this.device.createCommandEncoder();
+          const compute = encoder.beginComputePass(this.hasTimestamps ? {
+            timestampWrites: {
+              querySet: this.querySet,
+              beginningOfPassWriteIndex: 0,
+              endOfPassWriteIndex: 1
+            }
+          } : {});
+          compute.setPipeline(this.computePipeline);
+          compute.setBindGroup(0, computeBindGroup);
+          compute.dispatchWorkgroups(Math.ceil(particleCount / WORKGROUP_SIZE));
+          compute.end();
+          const render = encoder.beginRenderPass({
+            colorAttachments: [{
+              view: this.context.getCurrentTexture().createView(),
+              clearValue: { r: .114, g: .122, b: .102, a: 1 },
+              loadOp: "clear",
+              storeOp: "store"
+            }],
+            ...(this.hasTimestamps ? {
+              timestampWrites: {
+                querySet: this.querySet,
+                beginningOfPassWriteIndex: 2,
+                endOfPassWriteIndex: 3
+              }
+            } : {})
+          });
+          render.setPipeline(this.renderPipeline);
+          render.setBindGroup(0, renderBindGroup);
+          render.draw(3, particleCount);
+          render.end();
+          let querySlot = null;
+          if (this.hasTimestamps && this.frameIndex % 15 === 0) {
+            querySlot = this.readSlots.find(slot => !slot.busy) || null;
+            if (querySlot) {
+              encoder.resolveQuerySet(this.querySet, 0, 4, this.queryResolve, 0);
+              encoder.copyBufferToBuffer(this.queryResolve, 0, querySlot.buffer, 0, 32);
+            }
+          }
+          this.device.queue.submit([encoder.finish()]);
+          if (this.resolveFirstFrame) {
+            this.resolveFirstFrame();
+            this.resolveFirstFrame = null;
+          }
+          this.cpuSubmitMs += (performance.now() - encodeStart - this.cpuSubmitMs) * .16;
+          if (querySlot) this.readTimestamps(querySlot);
+
+          if (manualTimeline !== null) {
+            ui.timingLabel.textContent = "Capture state";
+            ui.frameTime.textContent = "Locked";
+            ui.timingBasis.textContent = "Timeline-pure frame";
+          } else if (this.hasTimestamps) {
+            ui.timingLabel.textContent = "Compute + render";
+            ui.frameTime.textContent = `${this.gpuMs.toFixed(2)} ms`;
+            ui.timingBasis.textContent = "GPU timestamp query";
+          } else {
+            ui.timingLabel.textContent = "Encode + submit";
+            ui.frameTime.textContent = `${this.cpuSubmitMs.toFixed(2)} ms`;
+            ui.timingBasis.textContent = "GPU timestamps unavailable";
+          }
+
+          if (manualTimeline === null && this.frameIndex > 45 && document.visibilityState === "visible" && frameDelta < 80) {
+            this.frameDurations.push(frameDelta);
+            if (this.frameDurations.length > 90) this.frameDurations.shift();
+          }
+          this.frameIndex++;
+          this.maybeTierDown();
+          if (!this.stopped) requestAnimationFrame(time => this.frame(time));
+        }
+      }
+
+      function drawFallback() {
+        const canvas = ui.fallback;
+        const context = canvas.getContext("2d");
+        const dpr = Math.min(devicePixelRatio || 1, 1.5);
+        canvas.width = Math.max(1, Math.floor(innerWidth * dpr));
+        canvas.height = Math.max(1, Math.floor(innerHeight * dpr));
+        canvas.style.width = `${innerWidth}px`;
+        canvas.style.height = `${innerHeight}px`;
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        context.clearRect(0, 0, innerWidth, innerHeight);
+
+        const mask = document.createElement("canvas");
+        mask.width = Math.max(1, Math.floor(innerWidth));
+        mask.height = Math.max(1, Math.floor(innerHeight));
+        const m = mask.getContext("2d", { willReadFrequently: true });
+        const size = Math.min(mask.width * .62, mask.height * .74);
+        m.fillStyle = "#fff";
+        m.textAlign = "center";
+        m.textBaseline = "middle";
+        m.font = `700 ${size}px Georgia, serif`;
+        m.fillText("M", mask.width * .53, mask.height * .55);
+        const mData = m.getImageData(0, 0, mask.width, mask.height).data;
+        m.clearRect(0, 0, mask.width, mask.height);
+        m.fillText(".", mask.width * .79, mask.height * .55);
+        const dotData = m.getImageData(0, 0, mask.width, mask.height).data;
+        const cream = "rgba(238,232,216,.76)";
+        const lime = "rgba(200,255,69,.9)";
+        let seed = 9042026;
+        const random = () => ((seed = Math.imul(1664525, seed) + 1013904223) >>> 0) / 4294967296;
+        const target = 20_000;
+        let drawn = 0;
+        let attempts = 0;
+        context.fillStyle = cream;
+        while (drawn < target && attempts < target * 40) {
+          attempts++;
+          const x = Math.floor(random() * mask.width);
+          const y = Math.floor(random() * mask.height);
+          const offset = (y * mask.width + x) * 4 + 3;
+          const inM = mData[offset] > 40;
+          const inDot = dotData[offset] > 40;
+          if (!inM && !inDot) continue;
+          context.fillStyle = inDot ? lime : cream;
+          const radius = .45 + random() * .75;
+          context.fillRect(x - radius * .5, y - radius * .5, radius, radius);
+          drawn++;
+        }
+      }
+
+      function startFallback(reason = "WebGPU is not available in this browser") {
+        fallbackActive = true;
+        document.body.classList.add("is-fallback");
+        ui.statusText.textContent = reason;
+        drawFallback();
+        addEventListener("resize", drawFallback, { passive: true });
+        updateStateUI(.58);
+        markFirstRenderReady();
+      }
+
+      async function start() {
+        await fontsReady;
+        updateStateUI(currentState);
+        if (!navigator.gpu) {
+          startFallback();
+          return;
+        }
+        try {
+          const field = new MillionField();
+          await field.init();
+          markFirstRenderReady();
+        } catch (error) {
+          console.error(error);
+          startFallback(`WebGPU startup failed: ${error.message}`);
+        }
+      }
+
+      reducedMotion.addEventListener?.("change", () => {
+        releaseManualTimeline();
+        updateStateUI(scrollScalar());
+      });
+      start();
+    })();
+  </script>
+</body>
+</html>

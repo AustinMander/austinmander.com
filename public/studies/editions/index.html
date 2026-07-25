@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12110f">
+  <title>Mander Editions 001–012</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --wall: #12110f;
+      --wall-raised: #191714;
+      --chalk: #e7e0d3;
+      --quiet: #8f897f;
+      --rule: #35312b;
+      --focus: #c7ff4a;
+      --serif: Iowan Old Style, Baskerville, Times New Roman, serif;
+      --sans: Avenir Next, Avenir, Futura, Century Gothic, sans-serif;
+      --mono: SFMono-Regular, Consolas, Liberation Mono, monospace;
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--wall); }
+
+    body {
+      margin: 0;
+      min-width: 18rem;
+      background:
+        radial-gradient(circle at 50% -15%, #29251f 0, var(--wall) 42rem),
+        var(--wall);
+      color: var(--chalk);
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-kerning: normal;
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 1px solid var(--focus);
+      outline-offset: 5px;
+    }
+
+    .site-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 2rem;
+      padding: max(2rem, env(safe-area-inset-top)) clamp(1.25rem, 4vw, 4.5rem) 1.4rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .identity { display: grid; gap: .45rem; }
+
+    .kicker,
+    .folio,
+    .gallery-progress,
+    .viewer-status {
+      margin: 0;
+      color: var(--quiet);
+      font-family: var(--mono);
+      font-size: .66rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .12em;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(2.25rem, 5.3vw, 5.8rem);
+      font-weight: 400;
+      letter-spacing: -.045em;
+      line-height: .86;
+    }
+
+    .folio { padding-bottom: .35rem; text-align: right; }
+
+    main { padding: clamp(2.5rem, 7vw, 7rem) clamp(1.25rem, 4vw, 4.5rem) 7rem; }
+
+    .gallery-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(14rem, .6fr);
+      gap: 2rem;
+      align-items: end;
+      margin: 0 0 clamp(2.5rem, 6vw, 5rem);
+    }
+
+    .gallery-intro p {
+      margin: 0;
+      max-width: 41ch;
+      color: #b9b1a3;
+      font-family: var(--serif);
+      font-size: clamp(1.2rem, 2.1vw, 1.8rem);
+      line-height: 1.28;
+    }
+
+    .gallery-progress { justify-self: end; text-align: right; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(2.25rem, 7vw, 7.5rem) clamp(1rem, 3.2vw, 3.5rem);
+      max-width: 100rem;
+      margin-inline: auto;
+    }
+
+    .plate-entry {
+      position: relative;
+      min-width: 0;
+      margin: 0;
+    }
+
+    .plate-entry:nth-child(3n + 2) { transform: translateY(clamp(0rem, 3vw, 3.5rem)); }
+
+    .plate-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: zoom-in;
+      text-align: left;
+      animation: plate-in .7s var(--ease-out) both;
+      animation-delay: calc(min(var(--i), 5) * 70ms);
+    }
+
+    .plate-shell {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      background: #eee8da;
+      box-shadow: 0 1.5rem 3.8rem rgb(0 0 0 / .32), 0 .15rem .5rem rgb(0 0 0 / .45);
+      transition: transform .32s var(--ease-out), box-shadow .32s var(--ease-out);
+      contain: layout paint style;
+    }
+
+    .plate-button:hover .plate-shell {
+      transform: translateY(-.35rem);
+      box-shadow: 0 2rem 5rem rgb(0 0 0 / .42), 0 .15rem .5rem rgb(0 0 0 / .45);
+    }
+
+    .plate-shell::after {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .12) 50%, transparent 65%);
+      content: "";
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-70%);
+      transition: opacity .15s linear, transform .55s var(--ease-out);
+    }
+
+    .plate-button:hover .plate-shell::after { opacity: .7; transform: translateX(70%); }
+
+    canvas { display: block; width: 100%; height: 100%; }
+
+    figcaption {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-top: .85rem;
+      color: var(--quiet);
+      font-family: var(--mono);
+      font-size: .62rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .1em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    figcaption span:last-child { text-align: right; }
+
+    .viewer {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 1fr auto;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+      border: 0;
+      background: rgb(12 11 10 / .97);
+      color: var(--chalk);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .24s linear;
+    }
+
+    .viewer[open] { opacity: 1; pointer-events: auto; }
+
+    .viewer::backdrop { background: rgb(12 11 10 / .97); }
+
+    .viewer-stage {
+      display: grid;
+      min-height: 0;
+      place-items: center;
+      padding: 2.75rem .25rem 1rem;
+    }
+
+    .viewer-plate {
+      width: min(100%, calc(75dvh - 7.125rem));
+      aspect-ratio: 3 / 4;
+      background: #eee8da;
+      box-shadow: 0 2rem 6rem rgb(0 0 0 / .65);
+    }
+
+    .viewer-controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem 2rem;
+      align-items: center;
+      width: min(72rem, 100%);
+      margin: auto;
+      padding: 1rem 0 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .viewer-copy { display: grid; gap: .28rem; min-width: 0; }
+
+    .viewer-title {
+      overflow: hidden;
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(1.15rem, 2vw, 1.55rem);
+      font-weight: 400;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .viewer-status { color: #aaa297; }
+
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
+
+    .action {
+      min-height: 2.75rem;
+      padding: .7rem .9rem;
+      border: 1px solid #4b463f;
+      border-radius: 0;
+      background: transparent;
+      color: #d8d0c3;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      transition: background-color .12s linear, color .12s linear, border-color .12s linear;
+    }
+
+    .action:hover { border-color: #8d8578; background: #24211d; color: #f1eadf; }
+    .action.primary { border-color: #d8d0c3; background: #d8d0c3; color: #171512; }
+    .action.primary:hover { border-color: var(--focus); background: var(--focus); }
+    .action:disabled { cursor: wait; opacity: .48; }
+
+    .close {
+      position: absolute;
+      z-index: 2;
+      top: max(1rem, env(safe-area-inset-top));
+      right: max(1rem, env(safe-area-inset-right));
+      width: 2.75rem;
+      min-height: 2.75rem;
+      padding: 0;
+      border-color: #4b463f;
+      font-size: 1rem;
+    }
+
+    @keyframes plate-in {
+      from { opacity: 0; transform: translateY(1.25rem); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (min-width: 48rem) {
+      .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 78rem) {
+      .gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 40rem) {
+      .site-head { grid-template-columns: 1fr; gap: 1rem; }
+      .folio { display: none; }
+      .gallery-intro { grid-template-columns: 1fr; }
+      .gallery-progress { justify-self: start; text-align: left; }
+      .gallery { grid-template-columns: 1fr; gap: 3.5rem; }
+      .plate-entry:nth-child(3n + 2) { transform: none; }
+      .viewer-controls { grid-template-columns: 1fr; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; justify-content: stretch; }
+      .action.primary { grid-column: 1 / -1; }
+    }
+
+    @media (pointer: coarse) {
+      .action { min-height: 3rem; padding-inline: 1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-delay: 0ms !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-head">
+    <div class="identity">
+      <p class="kicker">A study in directed noise / MMXXVI</p>
+      <h1>Mander Editions</h1>
+    </div>
+    <p class="folio">Editions 001–012<br>Fixed seed / Open proof</p>
+  </header>
+
+  <main>
+    <section class="gallery-intro" aria-labelledby="series-note">
+      <p id="series-note">Twelve fields traced from a single system. Each line follows the pressure of the one before it.</p>
+      <p class="gallery-progress" id="gallery-progress" aria-live="polite">Preparing plates 00 / 12</p>
+    </section>
+    <section class="gallery" id="gallery" aria-label="Mander Editions print gallery"></section>
+  </main>
+
+  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+    <button class="action close" id="close-viewer" type="button" aria-label="Close viewer">×</button>
+    <div class="viewer-stage">
+      <div class="viewer-plate"><canvas id="viewer-canvas" aria-label="Selected generative print"></canvas></div>
+    </div>
+    <div class="viewer-controls">
+      <div class="viewer-copy">
+        <h2 class="viewer-title" id="viewer-title">Edition 001</h2>
+        <p class="viewer-status" id="viewer-status" aria-live="polite">Rendering field</p>
+      </div>
+      <div class="actions">
+        <button class="action" id="reroll" type="button">Reroll seed</button>
+        <button class="action" id="palette" type="button">Cycle palette</button>
+        <button class="action primary" id="export" type="button">Export PNG / 3600 × 4800</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const PLATE_RATIO = 4 / 3;
+      const INITIAL_LINE_BUDGET = 4800;
+      const FRAME_BUDGET_MS = 7;
+
+      const palettes = [
+        { name: 'Carbon / Flax', paper: '#ece5d5', ink: '#232522', ink2: '#606257', accent: '#8e2f26' },
+        { name: 'Oxblood / Cotton', paper: '#eee6d8', ink: '#6d2023', ink2: '#a2473c', accent: '#292725' },
+        { name: 'Midnight / Signal', paper: '#dddccf', ink: '#161d2f', ink2: '#39445e', accent: '#8fae21' },
+        { name: 'Sienna / Bone', paper: '#eadfce', ink: '#934331', ink2: '#c16d4c', accent: '#473e36' },
+        { name: 'Forest / Parchment', paper: '#e7e1cf', ink: '#183f37', ink2: '#607566', accent: '#bb6a32' },
+        { name: 'Graphite / Rose', paper: '#eadfd8', ink: '#303235', ink2: '#747170', accent: '#a33e4d' }
+      ];
+
+      const editions = [
+        { seed: 8241, title: 'Alluvial Memory', palette: 0, density: .94, scale: 2.45, curl: .19, drift: -.12 },
+        { seed: 1163, title: 'Countercurrent', palette: 0, density: 1.08, scale: 3.15, curl: .26, drift: .08 },
+        { seed: 5702, title: 'Red Fault', palette: 1, density: .82, scale: 2.12, curl: .14, drift: -.26 },
+        { seed: 9328, title: 'Night Orchard', palette: 2, density: 1.16, scale: 3.76, curl: .34, drift: .14 },
+        { seed: 4019, title: 'Dry Meridian', palette: 3, density: .88, scale: 2.74, curl: .2, drift: .3 },
+        { seed: 6657, title: 'Quiet Divide', palette: 4, density: .98, scale: 4.2, curl: .11, drift: -.08 },
+        { seed: 8241 + 340, title: 'Pressure Atlas', palette: 1, density: 1.2, scale: 3.36, curl: .29, drift: -.19 },
+        { seed: 2194, title: 'Pale Estuary', palette: 5, density: .74, scale: 2.3, curl: .16, drift: .18 },
+        { seed: 7730, title: 'Signal Plain', palette: 2, density: 1.12, scale: 4.65, curl: .24, drift: .03 },
+        { seed: 3486, title: 'Silt Register', palette: 3, density: 1.02, scale: 3.05, curl: .31, drift: -.32 },
+        { seed: 9084, title: 'Green Interval', palette: 4, density: .9, scale: 3.9, curl: .13, drift: .24 },
+        { seed: 1527, title: 'Terminal Moraine', palette: 5, density: 1.18, scale: 2.62, curl: .37, drift: -.04 }
+      ];
+      const galleryDensityTotal = editions.reduce((sum, edition) => sum + edition.density, 0);
+
+      const gallery = document.querySelector('#gallery');
+      const galleryProgress = document.querySelector('#gallery-progress');
+      const viewer = document.querySelector('#viewer');
+      const viewerCanvas = document.querySelector('#viewer-canvas');
+      const viewerTitle = document.querySelector('#viewer-title');
+      const viewerStatus = document.querySelector('#viewer-status');
+      const rerollButton = document.querySelector('#reroll');
+      const paletteButton = document.querySelector('#palette');
+      const exportButton = document.querySelector('#export');
+      const closeButton = document.querySelector('#close-viewer');
+
+      let completedPlates = 0;
+      let activeEdition = 0;
+      let activeSeed = editions[0].seed;
+      let activePalette = editions[0].palette;
+      let isProof = false;
+      let viewerRenderToken = 0;
+      let exportRunning = false;
+      const renderQueue = [];
+
+      function hashSeed(value) {
+        const text = String(value);
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < text.length; i += 1) {
+          h ^= text.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        h += h << 13;
+        h ^= h >>> 7;
+        h += h << 3;
+        h ^= h >>> 17;
+        h += h << 5;
+        return h >>> 0;
+      }
+
+      function mulberry32(seed) {
+        let state = seed >>> 0;
+        return () => {
+          state += 0x6D2B79F5;
+          let t = state;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function smooth(t) { return t * t * (3 - 2 * t); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      function createNoise(seed) {
+        const rand = mulberry32(hashSeed(seed));
+        const table = new Float32Array(512);
+        for (let i = 0; i < table.length; i += 1) table[i] = rand() * 2 - 1;
+
+        function value(x, y) {
+          const xi = Math.floor(x);
+          const yi = Math.floor(y);
+          const xf = smooth(x - xi);
+          const yf = smooth(y - yi);
+          const sample = (sx, sy) => {
+            let n = Math.imul(sx, 374761393) + Math.imul(sy, 668265263);
+            n = (n ^ (n >>> 13)) >>> 0;
+            return table[n & 511];
+          };
+          const top = lerp(sample(xi, yi), sample(xi + 1, yi), xf);
+          const bottom = lerp(sample(xi, yi + 1), sample(xi + 1, yi + 1), xf);
+          return lerp(top, bottom, yf);
+        }
+
+        return (x, y) => {
+          let total = 0;
+          let amplitude = .58;
+          let frequency = 1;
+          for (let octave = 0; octave < 4; octave += 1) {
+            total += value(x * frequency, y * frequency) * amplitude;
+            amplitude *= .5;
+            frequency *= 2.03;
+          }
+          return total;
+        };
+      }
+
+      function withAlpha(hex, alpha) {
+        const value = parseInt(hex.slice(1), 16);
+        const r = value >> 16;
+        const g = (value >> 8) & 255;
+        const b = value & 255;
+        return `rgba(${r},${g},${b},${alpha})`;
+      }
+
+      function fitCanvas(canvas, cssWidth, pixelRatio = 1) {
+        const width = Math.max(180, Math.round(cssWidth * pixelRatio));
+        const height = Math.round(width * PLATE_RATIO);
+        canvas.width = width;
+        canvas.height = height;
+        return { width, height };
+      }
+
+      function createPlateRenderer(canvas, options) {
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const width = canvas.width;
+        const height = canvas.height;
+        const unit = width / 900;
+        const edition = editions[options.editionIndex];
+        const palette = palettes[options.paletteIndex];
+        const seed = options.seed;
+        const rand = mulberry32(hashSeed(`${seed}/paths`));
+        const grainRand = mulberry32(hashSeed(`${seed}/paper`));
+        const noise = createNoise(`${seed}/field`);
+        const verticalOffset = rand();
+        const lineCount = options.lineCount;
+        const field = {
+          x: width * .085,
+          y: height * .075,
+          w: width * .83,
+          h: height * .655
+        };
+        let lineIndex = 0;
+
+        ctx.fillStyle = palette.paper;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        const grainCount = Math.min(options.print ? 32000 : 3400, Math.round(width * height / 210));
+        for (let i = 0; i < grainCount; i += 1) {
+          const alpha = .012 + grainRand() * .026;
+          const tone = grainRand() > .58 ? palette.ink : '#ffffff';
+          ctx.fillStyle = withAlpha(tone, alpha);
+          const size = (.25 + grainRand() * .7) * unit;
+          ctx.fillRect(grainRand() * width, grainRand() * height, Math.max(.35, size), Math.max(.35, size));
+        }
+        ctx.restore();
+
+        function drawLine(index) {
+          const family = index % 13 === 0 ? 1 : (index % 47 === 0 ? 2 : 0);
+          const band = Math.floor(index / Math.max(1, lineCount / 19));
+          let x = field.x + rand() * field.w;
+          const verticalPhase = (index * .61803398875 + verticalOffset + (rand() - .5) * .05 + 1) % 1;
+          let y = field.y + verticalPhase * field.h;
+          y += Math.sin((x / width) * 7.3 + band * .17) * field.h * .014;
+
+          const direction = rand() > .18 ? 1 : -1;
+          const maxSteps = Math.round(48 + rand() * 74);
+          const step = width * (.0024 + rand() * .0013) * direction;
+          const baseAlpha = family === 2 ? .64 : (family === 1 ? .42 : .25 + rand() * .2);
+          ctx.strokeStyle = withAlpha(family === 2 ? palette.accent : (family === 1 ? palette.ink2 : palette.ink), baseAlpha);
+          ctx.lineWidth = Math.max(options.print ? .7 : .35, unit * (family === 2 ? 1.1 : .55));
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+
+          for (let s = 0; s < maxSteps; s += 1) {
+            const nx = (x - field.x) / field.w;
+            const ny = (y - field.y) / field.h;
+            const pressure = noise(nx * edition.scale + .13, ny * edition.scale - .37);
+            const cross = noise(nx * edition.scale * .52 + 8.4, ny * edition.scale * .52 + 2.1);
+            const angle = edition.drift + pressure * 1.5 + cross * edition.curl;
+            x += Math.cos(angle) * step;
+            y += Math.sin(angle) * Math.abs(step) * 1.32;
+            if (x < field.x || x > field.x + field.w || y < field.y || y > field.y + field.h) break;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        function drawPlateType() {
+          const num = String(options.editionIndex + 1).padStart(3, '0');
+          const label = options.proof ? 'PROOF / UNNUMBERED' : `MANDER EDITIONS / No. ${num}`;
+          const baseline = height * .826;
+          const margin = width * .085;
+          ctx.fillStyle = palette.ink;
+          ctx.textBaseline = 'alphabetic';
+          ctx.font = `${Math.round(27 * unit)}px Georgia, serif`;
+          ctx.fillText(edition.title.toUpperCase(), margin, baseline);
+
+          ctx.globalAlpha = .65;
+          ctx.fillRect(margin, baseline + 24 * unit, width * .83, Math.max(1, .6 * unit));
+          ctx.globalAlpha = 1;
+
+          ctx.font = `${Math.max(8, Math.round(9.5 * unit))}px monospace`;
+          // Left label and right seed share a baseline; on small plates they collide.
+          // Degrade left label until both fit with a gap, then drop the right suffix.
+          const rightFull = `SEED ${seed} / ${palette.name.toUpperCase()}`;
+          const rightShort = `SEED ${seed}`;
+          const avail = width - margin * 2;
+          const gap = 14 * unit;
+          let leftText = label;
+          let rightText = rightFull;
+          const fits = () => ctx.measureText(leftText).width + gap + ctx.measureText(rightText).width <= avail;
+          if (!fits()) leftText = options.proof ? 'PROOF' : `No. ${num}`;
+          if (!fits()) rightText = rightShort;
+          ctx.fillText(leftText, margin, baseline + 54 * unit);
+          ctx.textAlign = 'right';
+          ctx.fillText(rightText, width - margin, baseline + 54 * unit);
+          ctx.textAlign = 'left';
+
+          ctx.globalAlpha = .64;
+          ctx.font = `${Math.max(7, Math.round(7.5 * unit))}px monospace`;
+          ctx.fillText(`FIELD ${edition.scale.toFixed(2)} / CURL ${edition.curl.toFixed(2)} / DENSITY ${edition.density.toFixed(2)}`, margin, baseline + 82 * unit);
+          ctx.fillText('LINE INTEGRAL STUDY / 2026', margin, baseline + 101 * unit);
+          ctx.textAlign = 'right';
+          ctx.fillText('3:4 / GENERATIVE IMPRESSION', width - margin, baseline + 101 * unit);
+          ctx.textAlign = 'left';
+          ctx.globalAlpha = 1;
+        }
+
+        return {
+          step(maxLines) {
+            const end = Math.min(lineCount, lineIndex + maxLines);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(field.x, field.y, field.w, field.h);
+            ctx.clip();
+            while (lineIndex < end) {
+              drawLine(lineIndex);
+              lineIndex += 1;
+            }
+            ctx.restore();
+            if (lineIndex >= lineCount) drawPlateType();
+            return lineIndex >= lineCount;
+          },
+          progress() { return lineIndex / lineCount; }
+        };
+      }
+
+      function runQueue() {
+        const started = performance.now();
+        while (renderQueue.length && performance.now() - started < FRAME_BUDGET_MS) {
+          const job = renderQueue.shift();
+          if (job.cancelled()) continue;
+          const done = job.renderer.step(job.chunk);
+          job.onProgress?.(job.renderer.progress());
+          if (done) job.onDone?.();
+          else renderQueue.push(job);
+        }
+        if (renderQueue.length) requestAnimationFrame(runQueue);
+      }
+
+      function enqueue(job) {
+        const shouldStart = renderQueue.length === 0;
+        renderQueue.push(job);
+        if (shouldStart) requestAnimationFrame(runQueue);
+      }
+
+      function makeGallery() {
+        editions.forEach((edition, index) => {
+          const figure = document.createElement('figure');
+          figure.className = 'plate-entry';
+          figure.style.setProperty('--i', index);
+          figure.innerHTML = `
+            <button class="plate-button" type="button" aria-label="View edition ${String(index + 1).padStart(3, '0')}, ${edition.title}">
+              <span class="plate-shell"><canvas aria-hidden="true"></canvas></span>
+            </button>
+            <figcaption><span>No. ${String(index + 1).padStart(3, '0')}</span><span>${edition.title}<br>Seed ${edition.seed}</span></figcaption>`;
+          gallery.append(figure);
+
+          const button = figure.querySelector('button');
+          const canvas = figure.querySelector('canvas');
+          const shell = figure.querySelector('.plate-shell');
+          button.addEventListener('click', () => openViewer(index));
+
+          requestAnimationFrame(() => {
+            const ratio = Math.min(window.devicePixelRatio || 1, 1.35);
+            fitCanvas(canvas, shell.getBoundingClientRect().width, ratio);
+            const renderer = createPlateRenderer(canvas, {
+              editionIndex: index,
+              seed: edition.seed,
+              paletteIndex: edition.palette,
+              lineCount: Math.floor(INITIAL_LINE_BUDGET * edition.density / galleryDensityTotal),
+              proof: false,
+              print: false
+            });
+            enqueue({
+              renderer,
+              chunk: 9,
+              cancelled: () => false,
+              onDone: () => {
+                completedPlates += 1;
+                galleryProgress.textContent = `Plates ready ${String(completedPlates).padStart(2, '0')} / 12`;
+              }
+            });
+          });
+        });
+      }
+
+      function activeLabel() {
+        const edition = editions[activeEdition];
+        const num = String(activeEdition + 1).padStart(3, '0');
+        return isProof ? `${edition.title} / proof, unnumbered` : `Edition ${num} / ${edition.title}`;
+      }
+
+      function renderViewer() {
+        const token = ++viewerRenderToken;
+        const plate = viewerCanvas.parentElement;
+        const cssWidth = plate.getBoundingClientRect().width;
+        const ratio = Math.min(window.devicePixelRatio || 1, 1.6);
+        fitCanvas(viewerCanvas, cssWidth, ratio);
+        const edition = editions[activeEdition];
+        const renderer = createPlateRenderer(viewerCanvas, {
+          editionIndex: activeEdition,
+          seed: activeSeed,
+          paletteIndex: activePalette,
+          lineCount: Math.round(Math.min(1500, viewerCanvas.width * 1.18) * edition.density),
+          proof: isProof,
+          print: false
+        });
+        viewerTitle.textContent = activeLabel();
+        viewerStatus.textContent = `Rendering / seed ${activeSeed} / ${palettes[activePalette].name}`;
+        enqueue({
+          renderer,
+          chunk: 15,
+          cancelled: () => token !== viewerRenderToken || !viewer.open,
+          onProgress: progress => {
+            viewerStatus.textContent = `Rendering ${String(Math.round(progress * 100)).padStart(2, '0')}% / seed ${activeSeed} / ${palettes[activePalette].name}`;
+          },
+          onDone: () => {
+            viewerStatus.textContent = `Ready / seed ${activeSeed} / ${palettes[activePalette].name}`;
+          }
+        });
+      }
+
+      function openViewer(index) {
+        activeEdition = index;
+        activeSeed = editions[index].seed;
+        activePalette = editions[index].palette;
+        isProof = false;
+        viewer.showModal();
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(renderViewer);
+      }
+
+      function closeViewer() {
+        viewerRenderToken += 1;
+        viewer.close();
+        document.body.style.overflow = '';
+      }
+
+      async function exportPrint() {
+        if (exportRunning) return;
+        exportRunning = true;
+        exportButton.disabled = true;
+        rerollButton.disabled = true;
+        paletteButton.disabled = true;
+        viewerStatus.textContent = 'Building print file 00% / 3600 × 4800';
+
+        const printCanvas = document.createElement('canvas');
+        printCanvas.width = 3600;
+        printCanvas.height = 4800;
+        const edition = editions[activeEdition];
+        const renderer = createPlateRenderer(printCanvas, {
+          editionIndex: activeEdition,
+          seed: activeSeed,
+          paletteIndex: activePalette,
+          lineCount: Math.round(7800 * edition.density),
+          proof: isProof,
+          print: true
+        });
+
+        await new Promise(resolve => {
+          function renderExportFrame() {
+            const started = performance.now();
+            let done = false;
+            while (!done && performance.now() - started < 12) done = renderer.step(32);
+            const percent = String(Math.round(renderer.progress() * 100)).padStart(2, '0');
+            viewerStatus.textContent = `Building print file ${percent}% / 3600 × 4800`;
+            if (done) resolve();
+            else requestAnimationFrame(renderExportFrame);
+          }
+          requestAnimationFrame(renderExportFrame);
+        });
+
+        viewerStatus.textContent = 'Encoding PNG / 3600 × 4800';
+        const blob = await new Promise(resolve => printCanvas.toBlob(resolve, 'image/png'));
+        if (blob) {
+          const num = String(activeEdition + 1).padStart(3, '0');
+          const kind = isProof ? 'proof' : `edition-${num}`;
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `mander-${kind}-seed-${activeSeed}.png`;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+          viewerStatus.textContent = `PNG saved / seed ${activeSeed} / 3600 × 4800`;
+        } else {
+          viewerStatus.textContent = 'PNG export failed / please try again';
+        }
+        exportRunning = false;
+        exportButton.disabled = false;
+        rerollButton.disabled = false;
+        paletteButton.disabled = false;
+      }
+
+      rerollButton.addEventListener('click', () => {
+        const values = new Uint32Array(1);
+        crypto.getRandomValues(values);
+        activeSeed = 1000 + (values[0] % 900000);
+        isProof = true;
+        renderViewer();
+      });
+
+      paletteButton.addEventListener('click', () => {
+        activePalette = (activePalette + 1) % palettes.length;
+        renderViewer();
+      });
+
+      exportButton.addEventListener('click', exportPrint);
+      closeButton.addEventListener('click', closeViewer);
+      viewer.addEventListener('cancel', event => {
+        event.preventDefault();
+        closeViewer();
+      });
+      viewer.addEventListener('click', event => {
+        if (event.target === viewer) closeViewer();
+      });
+      window.addEventListener('resize', () => {
+        if (viewer.open) renderViewer();
+      }, { passive: true });
+
+      makeGallery();
+    })();
+  </script>
+</body>
+</html>

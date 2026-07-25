@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15231c">
+  <title>Mander / The considered pause</title>
+  <style>
+    :root {
+      --ink: oklch(23% .025 155);
+      --ink-deep: oklch(16% .022 155);
+      --ink-lift: oklch(31% .03 155);
+      --paper: oklch(93% .024 82);
+      --paper-bright: oklch(97% .016 82);
+      --paper-dim: oklch(76% .025 82);
+      --copper: oklch(61% .13 52);
+      --line-dark: oklch(37% .025 155);
+      --line-light: oklch(81% .025 82);
+      --serif: "Iowan Old Style", Baskerville, "Palatino Linotype", Georgia, serif;
+      --sans: "Avenir Next Condensed", "Gill Sans", "Trebuchet MS", sans-serif;
+      --page-progress: 0;
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 20rem;
+      min-height: 100%;
+      background: var(--paper);
+      scroll-behavior: auto;
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      overflow-x: clip;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-kerning: normal;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background: var(--copper);
+      color: var(--ink-deep);
+    }
+
+    a { color: inherit; }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: .75rem;
+      left: .75rem;
+      padding: .75rem 1rem;
+      background: var(--paper-bright);
+      color: var(--ink-deep);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      transform: translateY(-180%);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .masthead {
+      position: absolute;
+      z-index: 20;
+      top: max(1rem, env(safe-area-inset-top));
+      left: max(1rem, env(safe-area-inset-left));
+      right: max(1rem, env(safe-area-inset-right));
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: start;
+      gap: 1rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid var(--line-light);
+      color: var(--ink);
+      font-size: clamp(.58rem, .55vw, .68rem);
+      font-weight: 700;
+      letter-spacing: .19em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .masthead__centre { justify-self: center; color: var(--paper-dim); }
+    .masthead__right { justify-self: end; text-align: right; }
+
+    .progress-rail {
+      position: fixed;
+      z-index: 30;
+      right: 0;
+      top: 0;
+      width: 2px;
+      height: 100svh;
+      background: var(--line-light);
+      pointer-events: none;
+    }
+
+    .progress-rail::after {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--copper);
+      transform: scaleY(var(--page-progress));
+      transform-origin: top;
+    }
+
+    .hero {
+      min-height: 132svh;
+      padding: clamp(8rem, 20vh, 13rem) clamp(1.25rem, 5vw, 5rem) clamp(5rem, 13vh, 9rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(15rem, .45fr);
+      grid-template-rows: 1fr auto;
+      gap: 4rem clamp(2rem, 7vw, 8rem);
+      background:
+        linear-gradient(90deg, transparent calc(8.333% - 1px), var(--line-light) 8.333%, transparent calc(8.333% + 1px));
+      background-size: 100% 100%;
+    }
+
+    .hero__title {
+      align-self: center;
+      max-width: 10.4ch;
+      margin: 0 0 0 -.055em;
+      font-family: var(--serif);
+      font-size: clamp(4.25rem, 10.8vw, 11.8rem);
+      font-weight: 400;
+      letter-spacing: -.065em;
+      line-height: .82;
+      text-wrap: balance;
+    }
+
+    .hero__title em {
+      color: var(--copper);
+      font-weight: 400;
+    }
+
+    .hero__lead {
+      align-self: end;
+      max-width: 26rem;
+      margin: 0;
+      padding-top: 1rem;
+      border-top: 1px solid var(--ink);
+      font-family: var(--serif);
+      font-size: clamp(1.35rem, 2.1vw, 2rem);
+      line-height: 1.22;
+    }
+
+    .hero__foot {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line-light);
+      color: var(--paper-dim);
+      font-size: .64rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .hero__foot span:last-child { color: var(--copper); }
+
+    .essay {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(8rem, .36fr) minmax(0, .64fr);
+      gap: clamp(2rem, 7vw, 9rem);
+      padding: clamp(7rem, 15vh, 12rem) clamp(1.25rem, 8vw, 9rem);
+      background: var(--paper);
+    }
+
+    .essay::before {
+      content: "";
+      position: absolute;
+      left: clamp(1.25rem, 8vw, 9rem);
+      right: clamp(1.25rem, 8vw, 9rem);
+      top: 0;
+      height: 1px;
+      background: var(--line-light);
+    }
+
+    .essay__aside {
+      align-self: start;
+      position: sticky;
+      top: 2rem;
+      margin: 0;
+      color: var(--copper);
+      font-size: .64rem;
+      font-weight: 700;
+      letter-spacing: .19em;
+      line-height: 1.6;
+      text-transform: uppercase;
+    }
+
+    .essay__body {
+      max-width: 58rem;
+    }
+
+    .essay h2 {
+      max-width: 11ch;
+      margin: 0 0 clamp(3rem, 8vh, 6rem) -.04em;
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6.4vw, 7rem);
+      font-weight: 400;
+      letter-spacing: -.055em;
+      line-height: .9;
+      text-wrap: balance;
+    }
+
+    .essay p {
+      max-width: 36ch;
+      margin: 0 0 1.5em;
+      font-family: var(--serif);
+      font-size: clamp(1.28rem, 2.15vw, 2.05rem);
+      line-height: 1.42;
+    }
+
+    .essay p:first-of-type::first-letter {
+      float: left;
+      margin: .07em .12em 0 -.035em;
+      color: var(--copper);
+      font-size: 4.25em;
+      line-height: .69;
+    }
+
+    .essay__body .pull {
+      max-width: 19ch;
+      margin: clamp(4rem, 10vh, 8rem) 0;
+      padding: 1.35rem 0;
+      border-top: 1px solid var(--copper);
+      border-bottom: 1px solid var(--copper);
+      font-size: clamp(2rem, 4vw, 4.35rem);
+      line-height: 1.05;
+      letter-spacing: -.035em;
+    }
+
+    .pin-beat {
+      --beat-progress: 0;
+      position: relative;
+      height: 382svh;
+      background: var(--ink-deep);
+      color: var(--paper);
+    }
+
+    .pin-stage {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      overflow: hidden;
+      isolation: isolate;
+      background: var(--ink-deep);
+    }
+
+    .pin-stage::after {
+      content: "";
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, var(--ink-deep) 0, transparent 23%, transparent 68%, var(--ink-deep) 100%),
+        linear-gradient(180deg, var(--ink-deep) 0, transparent 18%, transparent 76%, var(--ink-deep) 100%);
+      opacity: .57;
+    }
+
+    .pin-meta {
+      position: absolute;
+      z-index: 7;
+      top: max(1.1rem, env(safe-area-inset-top));
+      left: clamp(1.15rem, 3vw, 3.5rem);
+      right: clamp(1.15rem, 3vw, 3.5rem);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      padding-bottom: .7rem;
+      border-bottom: 1px solid var(--line-dark);
+      color: var(--paper-dim);
+      font-size: .59rem;
+      font-weight: 700;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+
+    .pin-meta span:nth-child(2) { justify-self: center; color: var(--paper); }
+    .pin-meta span:last-child { justify-self: end; color: var(--copper); }
+
+    .copy-track {
+      position: relative;
+      z-index: 10;
+      height: 382svh;
+      margin-top: -100svh;
+      padding: 33svh clamp(1.25rem, 7vw, 8rem) 124svh;
+      pointer-events: none;
+    }
+
+    .pin-copy {
+      --copy-opacity: 1;
+      --copy-shift: 0rem;
+      min-height: 75svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: min(47rem, 76vw);
+      margin-left: auto;
+      opacity: var(--copy-opacity);
+      transform: translate3d(0, var(--copy-shift), 0);
+      text-shadow: 0 2px 18px var(--ink-deep);
+    }
+
+    .pin-copy:nth-child(even) {
+      margin-right: auto;
+      margin-left: 0;
+    }
+
+    .pin-copy__kicker {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      margin: 0 0 1.3rem;
+      color: var(--copper);
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .pin-copy__kicker::before {
+      content: "";
+      width: 2.5rem;
+      height: 1px;
+      background: currentColor;
+    }
+
+    .pin-copy h2 {
+      max-width: 11ch;
+      margin: 0 0 1.45rem -.04em;
+      font-family: var(--serif);
+      font-size: clamp(3.2rem, 7.7vw, 8.6rem);
+      font-weight: 400;
+      letter-spacing: -.06em;
+      line-height: .85;
+      text-wrap: balance;
+    }
+
+    .pin-copy p:last-child {
+      max-width: 34ch;
+      margin: 0;
+      color: var(--paper-bright);
+      font-family: var(--serif);
+      font-size: clamp(1.12rem, 1.8vw, 1.7rem);
+      line-height: 1.42;
+    }
+
+    .scene {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      overflow: hidden;
+      background: var(--ink-deep);
+    }
+
+    .scene::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--line-dark) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line-dark) 1px, transparent 1px);
+      background-size: 8.333vw 8.333vw;
+      opacity: .28;
+    }
+
+    .draft-field {
+      position: absolute;
+      inset: -12vh -6vw;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: clamp(.75rem, 2vw, 2rem);
+      transform: perspective(1100px) rotateX(58deg) rotateZ(-12deg) translate3d(0, calc(var(--beat-progress) * -26vh), 0);
+      transform-origin: 54% 45%;
+    }
+
+    .draft-sheet {
+      position: relative;
+      min-height: 42vh;
+      border: 1px solid var(--line-dark);
+      background: var(--ink);
+      overflow: hidden;
+    }
+
+    .draft-sheet::before,
+    .draft-sheet::after {
+      content: "";
+      position: absolute;
+      left: 9%;
+      right: 9%;
+    }
+
+    .draft-sheet::before {
+      top: 13%;
+      height: 8%;
+      border-top: 2px solid var(--paper-dim);
+      border-bottom: 1px solid var(--line-dark);
+    }
+
+    .draft-sheet::after {
+      top: 31%;
+      bottom: 10%;
+      background: repeating-linear-gradient(180deg, var(--line-dark) 0 1px, transparent 1px 1.9rem);
+    }
+
+    .draft-scan {
+      position: absolute;
+      z-index: 3;
+      left: 0;
+      right: 0;
+      top: calc(18% + var(--beat-progress) * 62%);
+      height: 1px;
+      background: var(--copper);
+      box-shadow: 0 0 2.25rem var(--copper);
+    }
+
+    .draft-register {
+      position: absolute;
+      z-index: 4;
+      left: 12vw;
+      bottom: 11vh;
+      width: min(26rem, 58vw);
+      color: var(--paper-dim);
+      font-size: clamp(.58rem, .72vw, .75rem);
+      font-weight: 700;
+      letter-spacing: .2em;
+      line-height: 1.8;
+      text-transform: uppercase;
+    }
+
+    .draft-register strong {
+      display: block;
+      color: var(--copper);
+      font-family: var(--serif);
+      font-size: clamp(3rem, 7vw, 7rem);
+      font-weight: 400;
+      letter-spacing: -.045em;
+      line-height: .82;
+      text-transform: none;
+    }
+
+    .gate-field {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, var(--ink-lift), var(--ink-deep) 58%),
+        var(--ink-deep);
+    }
+
+    .gate-frame {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(74vw, 68rem);
+      aspect-ratio: 1.6;
+      border: 1px solid var(--line-dark);
+      transform: translate(-50%, -50%) scale(calc(.74 + var(--beat-progress) * .42));
+    }
+
+    .gate-frame::before,
+    .gate-frame::after {
+      content: "";
+      position: absolute;
+      inset: 8%;
+      border: 1px solid var(--line-dark);
+    }
+
+    .gate-frame::after { inset: 17%; }
+
+    .gate-leaf {
+      position: absolute;
+      z-index: 2;
+      top: 0;
+      bottom: 0;
+      width: 51%;
+      background: var(--ink);
+      border: 1px solid var(--line-dark);
+    }
+
+    .gate-leaf--left {
+      left: 0;
+      transform: translate3d(calc(var(--beat-progress) * -43%), 0, 0);
+    }
+
+    .gate-leaf--right {
+      right: 0;
+      transform: translate3d(calc(var(--beat-progress) * 43%), 0, 0);
+    }
+
+    .gate-leaf::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 34%;
+      height: 1px;
+      background: var(--line-dark);
+    }
+
+    .gate-leaf--left::before { right: 12%; }
+    .gate-leaf--right::before { left: 12%; }
+
+    .gate-seam {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 8%;
+      bottom: 8%;
+      width: 1px;
+      background: var(--copper);
+      transform: scaleY(calc(.12 + var(--beat-progress) * .88));
+      transform-origin: center;
+      box-shadow: 0 0 2.8rem var(--copper);
+    }
+
+    .gate-mark {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 50%;
+      width: clamp(4.5rem, 8vw, 8rem);
+      aspect-ratio: 1;
+      border: 1px solid var(--copper);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) rotate(calc(var(--beat-progress) * 90deg));
+    }
+
+    .gate-mark::before,
+    .gate-mark::after {
+      content: "";
+      position: absolute;
+      background: var(--copper);
+    }
+
+    .gate-mark::before { left: 50%; top: -12%; bottom: -12%; width: 1px; }
+    .gate-mark::after { top: 50%; left: -12%; right: -12%; height: 1px; }
+
+    .signature-field {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, var(--ink-lift) 0, var(--ink) 31%, var(--ink-deep) 68%);
+    }
+
+    .orbit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(76vw, 70rem);
+      aspect-ratio: 1;
+      border: 1px solid var(--line-dark);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) rotate(calc(var(--beat-progress) * 76deg));
+    }
+
+    .orbit--two {
+      width: min(57vw, 51rem);
+      transform: translate(-50%, -50%) rotate(calc(var(--beat-progress) * -112deg));
+    }
+
+    .orbit--three {
+      width: min(36vw, 32rem);
+      border-color: var(--copper);
+      transform: translate(-50%, -50%) rotate(calc(var(--beat-progress) * 148deg));
+    }
+
+    .orbit::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -4px;
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--copper);
+      background: var(--ink-deep);
+      transform: rotate(45deg);
+    }
+
+    .signature {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      top: 50%;
+      color: var(--paper);
+      font-family: var(--serif);
+      font-size: clamp(6rem, 18vw, 19rem);
+      font-style: italic;
+      letter-spacing: -.1em;
+      line-height: .7;
+      transform: translate(-54%, -48%) scale(calc(.86 + var(--beat-progress) * .12));
+    }
+
+    .signature-rule {
+      position: absolute;
+      z-index: 4;
+      left: 18%;
+      right: 18%;
+      top: 62%;
+      height: 1px;
+      background: var(--copper);
+      transform: scaleX(var(--beat-progress));
+      transform-origin: left;
+    }
+
+    .closing {
+      min-height: 150svh;
+      display: grid;
+      align-content: center;
+      padding: clamp(7rem, 18vh, 14rem) clamp(1.25rem, 8vw, 9rem);
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .closing__label {
+      margin: 0 0 2rem;
+      color: var(--copper);
+      font-size: .64rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .closing h2 {
+      max-width: 9.5ch;
+      margin: 0 0 3rem -.05em;
+      font-family: var(--serif);
+      font-size: clamp(4rem, 10vw, 11rem);
+      font-weight: 400;
+      letter-spacing: -.065em;
+      line-height: .82;
+      text-wrap: balance;
+    }
+
+    .closing__copy {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2rem clamp(2rem, 7vw, 8rem);
+      max-width: 68rem;
+      margin-left: auto;
+    }
+
+    .closing__copy p {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(1.25rem, 2vw, 1.9rem);
+      line-height: 1.45;
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      padding: 1.5rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+      border-top: 1px solid var(--line-dark);
+      background: var(--ink);
+      color: var(--paper-dim);
+      font-size: .61rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .footer span:last-child { color: var(--copper); }
+
+    @media (max-width: 46rem) {
+      .masthead { grid-template-columns: 1fr auto; }
+      .masthead__centre { display: none; }
+
+      .hero {
+        min-height: 100svh;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+        gap: 3rem;
+        padding-top: 8rem;
+      }
+
+      .hero__title { align-self: end; font-size: clamp(4rem, 20vw, 7rem); }
+      .hero__lead { align-self: start; }
+      .hero__foot { grid-column: 1; align-self: end; }
+
+      .essay {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        padding-top: 6rem;
+        padding-bottom: 7rem;
+      }
+
+      .essay__aside { position: static; }
+      .essay h2 { font-size: clamp(2.9rem, 14vw, 4.7rem); }
+      .essay p { font-size: 1.2rem; }
+      .essay__body .pull { font-size: clamp(2rem, 10vw, 3rem); }
+
+      .pin-beat {
+        height: auto;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .pin-stage {
+        position: relative;
+        height: 62svh;
+        min-height: 25rem;
+      }
+
+      .copy-track {
+        height: auto;
+        margin-top: 0;
+        padding: 4.5rem 1.25rem 7rem;
+        background: var(--paper);
+      }
+
+      .pin-copy,
+      .pin-copy:nth-child(even) {
+        width: 100%;
+        min-height: 0;
+        margin: 0 0 6rem;
+        opacity: 1;
+        transform: none;
+        color: var(--ink);
+        text-shadow: none;
+      }
+
+      .pin-copy:last-child { margin-bottom: 0; }
+      .pin-copy h2 { font-size: clamp(3.1rem, 15vw, 5rem); }
+      .pin-copy p:last-child { color: var(--ink); font-size: 1.17rem; }
+
+      .draft-field { grid-template-columns: repeat(4, 1fr); }
+      .draft-register { left: 1.25rem; bottom: 2.5rem; }
+      .gate-frame { width: 90vw; }
+      .orbit { width: 92vw; }
+      .orbit--two { width: 72vw; }
+      .orbit--three { width: 49vw; }
+
+      .closing { min-height: 110svh; }
+      .closing h2 { font-size: clamp(4rem, 19vw, 7rem); }
+      .closing__copy { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pin-beat {
+        height: auto;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .pin-stage {
+        position: relative;
+        height: min(72svh, 46rem);
+        min-height: 28rem;
+      }
+
+      .copy-track {
+        height: auto;
+        margin-top: 0;
+        padding: clamp(4.5rem, 10vh, 8rem) clamp(1.25rem, 8vw, 9rem);
+        background: var(--paper);
+      }
+
+      .pin-copy,
+      .pin-copy:nth-child(even) {
+        width: min(48rem, 100%);
+        min-height: 0;
+        margin: 0 0 clamp(5rem, 12vh, 9rem);
+        opacity: 1;
+        transform: none;
+        color: var(--ink);
+        text-shadow: none;
+      }
+
+      .pin-copy:last-child { margin-bottom: 0; }
+      .pin-copy p:last-child { color: var(--ink); }
+      .draft-field,
+      .gate-frame,
+      .gate-leaf,
+      .gate-seam,
+      .gate-mark,
+      .orbit,
+      .signature,
+      .signature-rule { transform: none; }
+      .gate-frame,
+      .gate-mark,
+      .orbit,
+      .signature { translate: -50% -50%; }
+      .draft-scan { top: 50%; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to the essay</a>
+  <header class="masthead" aria-label="Mander">
+    <span>Mander</span>
+    <span class="masthead__centre">Pinned prose</span>
+    <span class="masthead__right">Read slowly</span>
+  </header>
+  <div class="progress-rail" aria-hidden="true"></div>
+
+  <main id="content">
+    <section class="hero" aria-labelledby="page-title">
+      <h1 class="hero__title" id="page-title">The considered <em>pause.</em></h1>
+      <p class="hero__lead">When software can be produced in moments, attention moves to the person willing to stop, inspect and answer for what leaves the room.</p>
+      <div class="hero__foot">
+        <span>An essay about authorship after generation</span>
+        <span>Scroll to continue</span>
+      </div>
+    </section>
+
+    <section class="essay" aria-labelledby="opening-title">
+      <p class="essay__aside">Before the first gate</p>
+      <div class="essay__body">
+        <h2 id="opening-title">Abundance changed the question.</h2>
+        <p>For a long time, making the thing was the expensive part. A useful idea had to cross a wide distance before it became working software. It needed hands, time and a great deal of translation. The finished object carried evidence of that effort simply because it existed.</p>
+        <p>Generation closes much of that distance. A plausible interface can arrive before the meeting has ended. A codebase can become substantial before anyone has formed a reliable opinion of it. More can be made, more quickly, by more people. That is real leverage, and it also removes an old source of trust.</p>
+        <p class="pull">When output becomes plentiful, judgement becomes visible.</p>
+        <p>The difficult question is no longer only, can this be built? It is, who has looked closely enough to say this should be built this way? Who tested the edge, read the failure, checked the instrument and decided the work was ready to carry a name?</p>
+        <p>That decision is not a final flourish. It changes the nature of the work. A generated draft is a possibility. A reviewed result is a position. The distance between those two things is where authorship now lives.</p>
+      </div>
+    </section>
+
+    <section class="pin-beat" data-beat aria-label="The draft">
+      <div class="pin-stage">
+        <div class="pin-meta" aria-hidden="true">
+          <span>Material</span><span>The draft</span><span>Unsettled</span>
+        </div>
+        <div class="scene">
+          <div class="draft-field" aria-hidden="true">
+            <i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i>
+            <i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i>
+            <i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i><i class="draft-sheet"></i>
+          </div>
+          <div class="draft-scan" aria-hidden="true"></div>
+          <div class="draft-register"><strong>Many answers.</strong>Before anyone asks which one deserves to remain.</div>
+        </div>
+      </div>
+      <div class="copy-track">
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The draft / 01</p>
+          <h2>Speed changes the shape of doubt.</h2>
+          <p>A fast first answer feels complete because completion now has a convincing surface. The buttons work. The copy is fluent. The happy path holds. Doubt has not disappeared. It has moved underneath.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The draft / 02</p>
+          <h2>Plausible is not the same as proven.</h2>
+          <p>The work can be coherent and still misunderstand the brief. It can pass a demonstration and fail the next day. It can measure the easy proxy, name it as truth and make the whole system look more certain than it is.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The draft / 03</p>
+          <h2>So the first answer stays provisional.</h2>
+          <p>Not because generated work is lesser, but because every consequential answer deserves resistance. The draft earns attention. It does not yet earn a signature.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="essay" aria-labelledby="resistance-title">
+      <p class="essay__aside">Between answer and evidence</p>
+      <div class="essay__body">
+        <h2 id="resistance-title">A useful gate creates resistance.</h2>
+        <p>Review is often described as polish, a gentle pass over something already complete. That description makes it sound optional. Good review is more structural. It asks the work to survive contact with the claims it makes.</p>
+        <p>If an interface says a task succeeded, the reviewer follows the failure path. If an instrument presents a count, the reviewer finds the source of that count. If a render is called verified, the reviewer asks what was actually inspected, what was only inferred and what remains unknown.</p>
+        <p>The point is not suspicion for its own sake. It is to turn confidence into something that can be explained. A result should leave a trail: the brief that shaped it, the checks that challenged it, the correction that followed and the limit that remains.</p>
+        <p class="pull">A gate is valuable when it can still say no.</p>
+        <p>That capacity matters more as production accelerates. When making another version is cheap, refusing the weak version becomes the scarce act. The gate protects the reader from a polished mistake, and it protects the builder from mistaking motion for progress.</p>
+        <p>This is why the review gate is not placed after the product. It is part of the product. The answer is not finished when the agent stops. It is finished when an engineer has enough evidence to stand behind it.</p>
+      </div>
+    </section>
+
+    <section class="pin-beat" data-beat aria-label="The gate">
+      <div class="pin-stage">
+        <div class="pin-meta" aria-hidden="true">
+          <span>Method</span><span>The gate</span><span>Adversarial</span>
+        </div>
+        <div class="scene gate-field" aria-hidden="true">
+          <div class="gate-frame"></div>
+          <div class="gate-leaf gate-leaf--left"></div>
+          <div class="gate-leaf gate-leaf--right"></div>
+          <div class="gate-seam"></div>
+          <div class="gate-mark"></div>
+        </div>
+      </div>
+      <div class="copy-track">
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The gate / 01</p>
+          <h2>First, make the claim precise.</h2>
+          <p>Vague work is difficult to disprove. The gate begins by naming what the artefact is meant to do, where it should work and which evidence would be enough. A clear claim gives review something firm to push against.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The gate / 02</p>
+          <h2>Then, look for the catch.</h2>
+          <p>The mandatory review is adversarial. It looks for the path that breaks, the number that cannot be traced, the screen that was never inspected and the sentence that promises more than the instrument knows.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The gate / 03</p>
+          <h2>Only evidence opens the way.</h2>
+          <p>A correction is not a blemish on the process. It is proof that the process had teeth. The gate earns its place each time the work changes because someone looked closely.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="essay" aria-labelledby="signature-title">
+      <p class="essay__aside">After the catch</p>
+      <div class="essay__body">
+        <h2 id="signature-title">The signature carries the remainder.</h2>
+        <p>No review produces certainty. Software meets devices, people and conditions that no studio can hold all at once. Honest verification does not pretend otherwise. It draws a clean line around what has been checked and keeps the unknowns on the page.</p>
+        <p>That line is a practical form of authorship. It says: this behaviour was exercised; this source was inspected; this capture was rendered; this limitation is still open. The words are modest, but they make responsibility legible.</p>
+        <p class="pull">To sign the work is to remain answerable after it ships.</p>
+        <p>A signature therefore means more than approval. It joins the result to a person who can explain the choices inside it. If the context changes, that person can revisit the judgement. If a failure appears, there is somewhere for the question to land.</p>
+        <p>This is the studio model: agents provide reach and speed; engineering provides the line of accountability. One expands what can be attempted. The other decides what can be released.</p>
+        <p>Together they produce something more useful than either performance of certainty or ritual caution. They produce work that moves quickly, shows its receipts and stays open to correction.</p>
+      </div>
+    </section>
+
+    <section class="pin-beat" data-beat aria-label="The signature">
+      <div class="pin-stage">
+        <div class="pin-meta" aria-hidden="true">
+          <span>Responsibility</span><span>The signature</span><span>Answerable</span>
+        </div>
+        <div class="scene signature-field" aria-hidden="true">
+          <div class="orbit"></div>
+          <div class="orbit orbit--two"></div>
+          <div class="orbit orbit--three"></div>
+          <div class="signature">A.M.</div>
+          <div class="signature-rule"></div>
+        </div>
+      </div>
+      <div class="copy-track">
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The signature / 01</p>
+          <h2>The work leaves with a name.</h2>
+          <p>Not a name used as decoration. A name attached to a decision: this is the version worth releasing, these are the checks that support it and these are the limits the reader should know.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The signature / 02</p>
+          <h2>Authorship returns as judgement.</h2>
+          <p>The scarce contribution is no longer every keystroke. It is the accumulated taste to direct the system, recognise the almost-right answer and insist on the correction that makes the result hold.</p>
+        </article>
+        <article class="pin-copy" data-copy>
+          <p class="pin-copy__kicker">The signature / 03</p>
+          <h2>Trust begins where certainty ends.</h2>
+          <p>The honest studio does not claim omniscience. It says what it knows, shows how it knows and remains available for what happens next. That is enough to turn abundant output into accountable work.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="closing-title">
+      <p class="closing__label">The considered pause</p>
+      <h2 id="closing-title">Make quickly. Release carefully.</h2>
+      <div class="closing__copy">
+        <p>The future of software is not a choice between human craft and machine speed. It is a question of where each is most valuable. Let generation widen the field. Let judgement narrow it again.</p>
+        <p>The pause between those movements is small, but consequential. It is where the claim meets the evidence, the catch becomes a correction and a possible answer becomes work someone is willing to sign.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Mander / Agent-built, engineer-signed software</span>
+    <span>End of essay</span>
+  </footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const root = document.documentElement;
+      const scroller = document.scrollingElement;
+      const beatElements = Array.from(document.querySelectorAll("[data-beat]"));
+      const beatGroups = beatElements.map((beat) => ({
+        beat,
+        copies: Array.from(beat.querySelectorAll("[data-copy]"))
+      }));
+      const copyCentres = [.075, .34, .605];
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const studyBeats = [
+        { name: "opening", t: 0 },
+        { name: "draft", t: 0 },
+        { name: "gate", t: 0 },
+        { name: "signature", t: 0 },
+        { name: "close", t: 1 }
+      ];
+      let resolveReady;
+      const ready = new Promise((resolve) => {
+        resolveReady = resolve;
+      });
+
+      root.classList.add("scroll-script");
+
+      const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+      const currentMode = () => reduced.matches || window.innerWidth <= 736 ? "static" : "animated";
+
+      window.__study = {
+        version: 1,
+        ready,
+        beats: studyBeats,
+        mode: currentMode
+      };
+
+      function render() {
+        const viewport = Math.max(1, window.innerHeight);
+        const scrollTop = scroller.scrollTop;
+        const scrollRange = Math.max(1, scroller.scrollHeight - viewport);
+        const globalProgress = clamp(scrollTop / scrollRange);
+        const layouts = beatGroups.map(({ beat }) => ({
+          offsetTop: beat.offsetTop,
+          pinRange: Math.max(1, beat.offsetHeight - viewport)
+        }));
+
+        root.style.setProperty("--page-progress", globalProgress.toFixed(6));
+        layouts.forEach((layout, index) => {
+          studyBeats[index + 1].t = clamp(
+            (layout.offsetTop + layout.pinRange * .5) / scrollRange
+          );
+        });
+
+        beatGroups.forEach((group, groupIndex) => {
+          const { beat } = group;
+          const layout = layouts[groupIndex];
+          const progress = clamp((scrollTop - layout.offsetTop) / layout.pinRange);
+          beat.style.setProperty("--beat-progress", progress.toFixed(6));
+
+          group.copies.forEach((copy, index) => {
+            if (reduced.matches || window.innerWidth <= 736) {
+              copy.style.setProperty("--copy-opacity", "1");
+              copy.style.setProperty("--copy-shift", "0rem");
+              return;
+            }
+
+            const centre = copyCentres[index];
+            const distance = Math.abs(progress - centre);
+            const presence = 1 - clamp((distance - .105) / .14);
+            const direction = progress <= centre ? 1 : -1;
+            const shift = direction * (1 - presence) * 2.6;
+            copy.style.setProperty("--copy-opacity", presence.toFixed(6));
+            copy.style.setProperty("--copy-shift", `${shift.toFixed(4)}rem`);
+          });
+        });
+
+        return globalProgress;
+      }
+
+      function resolveTimelineValue(value) {
+        if (typeof value !== "string") {
+          return clamp(Number.isFinite(Number(value)) ? Number(value) : 0);
+        }
+
+        const beat = studyBeats.find(({ name }) => name === value);
+        if (beat) return beat.t;
+
+        const validNames = studyBeats.map(({ name }) => name).join(", ");
+        throw new Error(`Unknown beat "${value}". Valid beats: ${validNames}`);
+      }
+
+      function setTimeline(value) {
+        const t = resolveTimelineValue(value);
+        const range = Math.max(0, scroller.scrollHeight - window.innerHeight);
+        scroller.scrollTop = range * t;
+        const progress = render();
+        return {
+          progress,
+          scrollTop: scroller.scrollTop,
+          scrollHeight: scroller.scrollHeight,
+          reducedMotion: reduced.matches,
+          mode: currentMode()
+        };
+      }
+
+      window.__timeline = setTimeline;
+      window.addEventListener("scroll", render, { passive: true });
+      window.addEventListener("resize", render);
+      reduced.addEventListener("change", render);
+      render();
+
+      const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+      Promise.resolve(fontsReady)
+        .catch(() => undefined)
+        .then(() => {
+          render();
+          resolveReady();
+        });
+    })();
+  </script>
+</body>
+</html>

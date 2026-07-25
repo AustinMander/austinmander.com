@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#11142f">
+  <title>Study 05 / Two worlds, one camera.</title>
+  <style>
+    :root {
+      --night: #11142f;
+      --night-ink: #e8e2d3;
+      --clay: #a54631;
+      --paper: #ead9ba;
+      --signal: #e4a644;
+      --serif: "Bodoni 72", Didot, "Iowan Old Style", Georgia, serif;
+      --sans: "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+      --ease-out: cubic-bezier(.16,1,.3,1);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    html { background: var(--night); overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      background: var(--night);
+      color: var(--night-ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      touch-action: none;
+      user-select: none;
+    }
+
+    button { font: inherit; }
+    canvas { display: block; }
+
+    .world {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      contain: strict;
+    }
+
+    #orbit { z-index: 0; }
+    #arrival { z-index: 1; visibility: hidden; }
+
+    .grain {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      pointer-events: none;
+      opacity: .11;
+      mix-blend-mode: soft-light;
+      background-image: repeating-radial-gradient(circle at 20% 30%, transparent 0 1px, rgba(244,228,197,.25) 1.5px 2px);
+      background-size: 6px 6px;
+    }
+
+    .chrome {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .masthead {
+      position: absolute;
+      inset: max(1.1rem, env(safe-area-inset-top)) clamp(1rem, 2.7vw, 3rem) auto;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: start;
+      gap: 1rem;
+      text-transform: uppercase;
+      font-size: clamp(.57rem, .62vw, .69rem);
+      line-height: 1.2;
+      letter-spacing: .2em;
+    }
+
+    .masthead__id { font-weight: 700; }
+    .masthead__world { justify-self: center; opacity: .7; }
+    .masthead__help { justify-self: end; text-align: right; opacity: .68; }
+
+    .hairline {
+      position: absolute;
+      inset: clamp(3.55rem, 8vh, 5rem) clamp(1rem, 2.7vw, 3rem) auto;
+      height: 1px;
+      background: currentColor;
+      opacity: .34;
+      transform-origin: left;
+    }
+
+    .altitude {
+      position: absolute;
+      left: clamp(1rem, 2.7vw, 3rem);
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--serif);
+      font-size: clamp(3.5rem, 10.8vw, 10.5rem);
+      font-weight: 400;
+      line-height: .72;
+      letter-spacing: -.065em;
+      font-variant-numeric: tabular-nums lining-nums;
+      text-shadow: 0 1px 18px color-mix(in srgb, var(--night) 24%, transparent);
+    }
+
+    .altitude small {
+      display: block;
+      margin: 1.35rem 0 0 .45rem;
+      font-family: var(--sans);
+      font-size: .6rem;
+      font-weight: 650;
+      line-height: 1;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+
+    .phase {
+      position: absolute;
+      right: clamp(1rem, 2.7vw, 3rem);
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .phase__number {
+      display: block;
+      font-family: var(--serif);
+      font-size: clamp(2.7rem, 5.5vw, 5.5rem);
+      line-height: .8;
+      letter-spacing: -.055em;
+    }
+
+    .phase__label {
+      display: block;
+      margin-top: .9rem;
+      font-size: .62rem;
+      letter-spacing: .25em;
+      opacity: .74;
+    }
+
+    .timeline {
+      position: absolute;
+      left: clamp(1rem, 2.7vw, 3rem);
+      right: clamp(1rem, 2.7vw, 3rem);
+      bottom: max(1.2rem, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: .85rem;
+      font-size: .57rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    .timeline__track { position: relative; height: 9px; }
+    .timeline__track::before,
+    .timeline__fill,
+    .timeline__band {
+      position: absolute;
+      top: 4px;
+      height: 1px;
+    }
+
+    .timeline__track::before { content: ""; inset-inline: 0; background: currentColor; opacity: .35; }
+    .timeline__fill { left: 0; width: calc(var(--progress, 0) * 100%); background: currentColor; }
+    .timeline__band { left: 55%; width: 15%; background: var(--signal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--signal) 14%, transparent); }
+
+    .meter {
+      position: absolute;
+      right: clamp(1rem, 2.7vw, 3rem);
+      bottom: clamp(3rem, 7vh, 5.2rem);
+      width: min(15.5rem, 42vw);
+      border-top: 1px solid currentColor;
+      padding-top: .65rem;
+      font-size: clamp(.55rem, .61vw, .67rem);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .meter__head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: .7rem;
+      font-weight: 700;
+    }
+
+    .meter__status { color: var(--signal); }
+    .meter dl { display: grid; grid-template-columns: 1fr auto; gap: .38rem .7rem; margin: 0; }
+    .meter dt { opacity: .62; }
+    .meter dd { margin: 0; }
+
+    .annotation {
+      position: fixed;
+      z-index: 20;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      color: #f0e0c2;
+      background: rgba(15, 13, 24, .9);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 260ms var(--ease-out), visibility 0s linear 260ms;
+      pointer-events: none;
+    }
+
+    .annotation.is-visible {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+
+    .annotation__copy {
+      width: min(92vw, 68rem);
+      font-family: var(--serif);
+      font-size: clamp(2.1rem, 5.5vw, 5.8rem);
+      line-height: .92;
+      letter-spacing: -.045em;
+      text-align: center;
+    }
+
+    .annotation__copy span { display: block; }
+    .annotation__copy span:nth-child(2) { color: var(--signal); }
+    .annotation__key {
+      position: absolute;
+      bottom: max(1.4rem, env(safe-area-inset-bottom));
+      font-size: .6rem;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      opacity: .65;
+    }
+
+    .guided {
+      position: absolute;
+      top: clamp(4.55rem, 10vh, 6rem);
+      right: clamp(1rem, 2.7vw, 3rem);
+      color: var(--signal);
+      font-size: .6rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(-5px);
+      transition: transform 250ms var(--ease-out), opacity 200ms ease;
+    }
+
+    .guided.is-active { opacity: 1; transform: translateY(0); }
+
+    .skewable { transform: skewY(var(--skew, 0deg)); transform-origin: left center; }
+    .altitude.skewable { transform: translateY(-50%) skewY(var(--skew, 0deg)); }
+    .phase.skewable { transform: translateY(-50%) skewY(var(--skew, 0deg)); transform-origin: right center; }
+
+    #reduced-plates { display: none; position: fixed; z-index: 2; inset: 0; background: #15162f; }
+    .plate { position: relative; min-width: 0; overflow: hidden; }
+    .plate + .plate { border-left: 1px solid rgba(239,224,197,.32); }
+    .plate canvas { width: 100%; height: 100%; }
+    .plate span {
+      position: absolute;
+      left: 1rem;
+      bottom: 1rem;
+      color: #efe2ca;
+      font-size: .56rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    body.is-warm { color: #3b1f1a; }
+    body.is-warm .altitude { text-shadow: none; }
+    body.is-warm .timeline__band { background: #8d321f; box-shadow: 0 0 0 2px rgba(141,50,31,.15); }
+    body.is-warm .meter__status { color: #8d321f; }
+
+    @media (max-width: 700px) {
+      .masthead { grid-template-columns: 1fr auto; }
+      .masthead__world { display: none; }
+      .altitude { top: 43%; font-size: clamp(4rem, 18vw, 7rem); }
+      .phase { top: auto; bottom: 8.5rem; }
+      .meter { bottom: 5.2rem; left: 1rem; right: auto; width: min(15rem, calc(100vw - 2rem)); }
+      .timeline { bottom: 1.1rem; }
+      .annotation__copy { font-size: clamp(.78rem, 3.8vw, 1.1rem); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      body { position: static; height: auto; min-height: 100%; overflow: auto; touch-action: auto; }
+      .world, .grain, .phase, .timeline, .guided { display: none !important; }
+      #reduced-plates { display: grid; grid-template-columns: repeat(3, 1fr); }
+      .annotation { display: grid; background: rgba(15,13,24,.34); opacity: 1; visibility: visible; }
+      .annotation__copy { font-size: clamp(1.45rem, 4vw, 3.5rem); }
+      .meter { display: none; }
+      .masthead { color: #f1e4ce; }
+    }
+
+    @media (prefers-reduced-motion: reduce) and (max-width: 700px) {
+      #reduced-plates { grid-template-columns: 1fr; grid-template-rows: repeat(3, 33.333vh); }
+      .plate + .plate { border-left: 0; border-top: 1px solid rgba(239,224,197,.32); }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="world" id="orbit" aria-hidden="true"></canvas>
+  <canvas class="world" id="arrival" aria-hidden="true"></canvas>
+  <div id="reduced-plates" aria-hidden="true">
+    <div class="plate"><canvas></canvas><span>01 / Orbit</span></div>
+    <div class="plate"><canvas></canvas><span>02 / Handoff</span></div>
+    <div class="plate"><canvas></canvas><span>03 / Arrival</span></div>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main class="chrome" aria-label="Study 05, Two worlds, one camera">
+    <header class="masthead">
+      <div class="masthead__id skewable">Study 05 / Two worlds, one camera.</div>
+      <div class="masthead__world" id="world-label">World A / Orbit</div>
+      <div class="masthead__help">A annotate&nbsp;&nbsp; G guided</div>
+    </header>
+    <div class="hairline" aria-hidden="true"></div>
+    <div class="guided" id="guided">Guided descent / 30 sec</div>
+
+    <div class="altitude skewable" aria-live="off">
+      <span id="altitude-value">12.0 km</span>
+      <small>Continuous altitude</small>
+    </div>
+
+    <div class="phase skewable">
+      <span class="phase__number" id="phase-number">01</span>
+      <span class="phase__label" id="phase-label">Night orbit</span>
+    </div>
+
+    <aside class="meter" aria-label="Continuity meter">
+      <div class="meter__head"><span>Continuity meter</span><span class="meter__status" id="meter-status">Standby</span></div>
+      <dl>
+        <dt>Velocity A:B</dt><dd id="velocity-ratio">1.00</dd>
+        <dt>Luminance Δ</dt><dd id="luminance-delta">0.00</dd>
+        <dt>Band progress</dt><dd id="band-progress">0%</dd>
+      </dl>
+    </aside>
+
+    <div class="timeline">
+      <span>12 km</span>
+      <div class="timeline__track"><div class="timeline__fill"></div><div class="timeline__band"></div></div>
+      <span>2 m</span>
+    </div>
+  </main>
+
+  <aside class="annotation" id="annotation" aria-label="Study annotation">
+    <div class="annotation__copy">
+      <span>One scalar. Two renderers. One fall.</span>
+      <span>Target A:B velocity 0.80–1.25.</span>
+      <span>Matched screen speed hides the handoff.</span>
+      <span>Continuity beats a cut.</span>
+    </div>
+    <div class="annotation__key">A / close annotation</div>
+  </aside>
+
+  <script>
+    (() => {
+      'use strict';
+
+      /* Trimmed inline vendor: mander-motion. One scalar, one RAF, wheel/touch/key inputs. */
+      const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+      const INPUT_OPTIONS = { passive: false };
+
+      class ManderMotion {
+        constructor(options) {
+          this.lerp = clamp(options.lerp || .09, .001, 1);
+          this.lengthVh = options.lengthVh || 420;
+          this.onFrame = options.onFrame;
+          this.onInput = options.onInput;
+          this.total = Math.max(1, innerHeight * this.lengthVh * .01);
+          this.current = 0;
+          this.target = 0;
+          this.velocity = 0;
+          this.last = 0;
+          this.touchY = 0;
+          this.touching = false;
+          this.running = false;
+          this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          this.tick = this.tick.bind(this);
+          this.wheel = this.wheel.bind(this);
+          this.key = this.key.bind(this);
+          this.touchStart = this.touchStart.bind(this);
+          this.touchMove = this.touchMove.bind(this);
+          this.touchEnd = this.touchEnd.bind(this);
+          this.resize = this.resize.bind(this);
+          addEventListener('wheel', this.wheel, INPUT_OPTIONS);
+          addEventListener('keydown', this.key, INPUT_OPTIONS);
+          addEventListener('touchstart', this.touchStart, { passive: true });
+          addEventListener('touchmove', this.touchMove, INPUT_OPTIONS);
+          addEventListener('touchend', this.touchEnd, INPUT_OPTIONS);
+          addEventListener('touchcancel', this.touchEnd, INPUT_OPTIONS);
+          addEventListener('resize', this.resize);
+        }
+        start() { if (!this.running) { this.running = true; requestAnimationFrame(this.tick); } }
+        scrollTo(value, immediate) {
+          this.target = clamp(Number(value) || 0, 0, this.total);
+          if (immediate || this.reduced) this.current = this.target;
+        }
+        scrollBy(delta) { this.scrollTo(this.target + delta, false); }
+        wheel(event) {
+          event.preventDefault();
+          this.onInput('wheel');
+          let delta = event.deltaY;
+          if (event.deltaMode === 1) delta *= 16;
+          else if (event.deltaMode === 2) delta *= innerHeight;
+          this.scrollBy(delta * 1.15);
+        }
+        key(event) {
+          if (event.metaKey || event.ctrlKey || event.altKey) return;
+          const step = innerHeight * .72;
+          let next = this.target;
+          if (event.key === 'ArrowDown') next += step * .34;
+          else if (event.key === 'ArrowUp') next -= step * .34;
+          else if (event.key === 'PageDown' || event.key === ' ') next += step;
+          else if (event.key === 'PageUp') next -= step;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = this.total;
+          else return;
+          event.preventDefault();
+          this.onInput('key');
+          this.scrollTo(next, false);
+        }
+        touchStart(event) { if (event.touches.length === 1) { this.onInput('touch'); this.touching = true; this.touchY = event.touches[0].clientY; } }
+        touchMove(event) {
+          if (!this.touching || event.touches.length !== 1) return;
+          event.preventDefault();
+          const y = event.touches[0].clientY;
+          this.scrollBy((this.touchY - y) * 1.4);
+          this.touchY = y;
+        }
+        touchEnd() { this.touching = false; }
+        resize() {
+          const p = this.total ? this.current / this.total : 0;
+          const q = this.total ? this.target / this.total : 0;
+          this.total = Math.max(1, innerHeight * this.lengthVh * .01);
+          this.current = p * this.total;
+          this.target = q * this.total;
+        }
+        tick(time) {
+          if (!this.running) return;
+          const dt = this.last ? Math.min((time - this.last) * .001, .064) : 1 / 60;
+          this.last = time;
+          const before = this.current;
+          if (this.reduced) this.current = this.target;
+          else {
+            const follow = 1 - Math.pow(1 - this.lerp, dt * 60);
+            this.current += (this.target - this.current) * follow;
+            if (Math.abs(this.target - this.current) < .03) this.current = this.target;
+          }
+          this.velocity = dt ? (this.current - before) / dt : 0;
+          this.onFrame(clamp(this.current / this.total, 0, 1), dt, this.velocity, time);
+          requestAnimationFrame(this.tick);
+        }
+      }
+
+      const orbitCanvas = document.querySelector('#orbit');
+      const arrivalCanvas = document.querySelector('#arrival');
+      const orbit = orbitCanvas.getContext('2d', { alpha: false });
+      const arrival = arrivalCanvas.getContext('2d', { alpha: false });
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const annotation = document.querySelector('#annotation');
+      const guidedLabel = document.querySelector('#guided');
+      const altitudeValue = document.querySelector('#altitude-value');
+      const worldLabel = document.querySelector('#world-label');
+      const phaseNumber = document.querySelector('#phase-number');
+      const phaseLabel = document.querySelector('#phase-label');
+      const velocityRatioNode = document.querySelector('#velocity-ratio');
+      const luminanceDeltaNode = document.querySelector('#luminance-delta');
+      const bandProgressNode = document.querySelector('#band-progress');
+      const meterStatus = document.querySelector('#meter-status');
+      const root = document.documentElement;
+      const body = document.body;
+
+      const TAU = Math.PI * 2;
+      const STAR_COUNT = 220;
+      const LIGHT_COUNT = 980;
+      const stars = new Float32Array(STAR_COUNT * 4);
+      const lights = new Float32Array(LIGHT_COUNT * 4);
+      const roadX = new Float32Array(48);
+      const roadY = new Float32Array(48);
+      let width = 1;
+      let height = 1;
+      let dpr = 1;
+      let lastT = -1;
+      let previousA = 0;
+      let previousB = 0;
+      let ratio = 1;
+      let noiseTile = null;
+      let arrivalNoisePattern = null;
+      let guidedStart = 0;
+      let guidedActive = false;
+      let deterministic = false;
+      let orbitVisible = true;
+      let arrivalVisible = false;
+
+      function seeded(index) {
+        const n = Math.sin(index * 91.739 + 17.113) * 43758.5453;
+        return n - Math.floor(n);
+      }
+
+      function smooth01(v) { v = clamp(v, 0, 1); return v * v * (3 - 2 * v); }
+      function easeInOut(v) { v = clamp(v, 0, 1); return v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2; }
+      function mix(a, b, t) { return a + (b - a) * t; }
+
+      function initialiseFields() {
+        for (let i = 0; i < STAR_COUNT; i += 1) {
+          const j = i * 4;
+          stars[j] = seeded(i * 4 + 1);
+          stars[j + 1] = seeded(i * 4 + 2);
+          stars[j + 2] = .25 + seeded(i * 4 + 3) * 1.55;
+          stars[j + 3] = .25 + seeded(i * 4 + 4) * .75;
+        }
+        for (let i = 0; i < LIGHT_COUNT; i += 1) {
+          const j = i * 4;
+          const row = (i / 35) | 0;
+          const col = i % 35;
+          lights[j] = .22 + col / 34 * .74 + (seeded(i * 7 + 1) - .5) * .014;
+          lights[j + 1] = .12 + row / 27 * .79 + (seeded(i * 7 + 2) - .5) * .018;
+          lights[j + 2] = seeded(i * 7 + 3);
+          lights[j + 3] = .25 + seeded(i * 7 + 4) * .75;
+        }
+        for (let i = 0; i < 48; i += 1) {
+          const x = i / 47;
+          roadX[i] = .16 + x * .88;
+          roadY[i] = .5 + Math.sin(x * 8.7 + .4) * .13 + Math.sin(x * 21) * .026;
+        }
+      }
+
+      function configureCanvas(canvas, context, cssWidth, cssHeight) {
+        canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+        canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        context.imageSmoothingEnabled = true;
+      }
+
+      function makeNoise() {
+        const tile = document.createElement('canvas');
+        tile.width = 128;
+        tile.height = 128;
+        const ctx = tile.getContext('2d');
+        const image = ctx.createImageData(128, 128);
+        for (let i = 0; i < image.data.length; i += 4) {
+          const v = 205 + ((seeded(i * .25 + 810) * 50) | 0);
+          image.data[i] = v;
+          image.data[i + 1] = v - 5;
+          image.data[i + 2] = v - 14;
+          image.data[i + 3] = 25;
+        }
+        ctx.putImageData(image, 0, 0);
+        noiseTile = tile;
+      }
+
+      function resize() {
+        width = innerWidth;
+        height = innerHeight;
+        dpr = Math.min(devicePixelRatio || 1, 1.75);
+        configureCanvas(orbitCanvas, orbit, width, height);
+        configureCanvas(arrivalCanvas, arrival, width, height);
+        arrivalNoisePattern = arrival.createPattern(noiseTile, 'repeat');
+        if (reduced) renderReducedPlates();
+        render(lastT < 0 ? 0 : lastT, 1 / 60, 0, true);
+      }
+
+      function orbitReferenceY(t) {
+        if (t < .55) return height * (.62 - easeInOut(t / .55) * .08);
+        const b = clamp((t - .55) / .15, 0, 1);
+        return height * (.54 - b * .28);
+      }
+
+      function arrivalReferenceY(t) {
+        if (t <= .7) {
+          const b = clamp((t - .55) / .15, 0, 1);
+          return height * (.54 - b * .28);
+        }
+        return height * (.26 - easeInOut((t - .7) / .3) * .08);
+      }
+
+      function orbitLuminance(b) { return mix(.16, .54, smooth01(b / .5)); }
+      function arrivalLuminance(b) { return b < .5 ? .54 : mix(.54, .7, smooth01((b - .5) * 2)); }
+
+      function drawOrbit(context, t, w, h) {
+        const inBand = t >= .55;
+        const b = clamp((t - .55) / .15, 0, 1);
+        const descend = easeInOut(clamp(t / .55, 0, 1));
+        const lift = inBand ? smooth01(b / .58) : 0;
+        const r = (12 + lift * 72) | 0;
+        const g = (15 + lift * 68) | 0;
+        const bl = (41 + lift * 48) | 0;
+        context.fillStyle = 'rgb(' + r + ',' + g + ',' + bl + ')';
+        context.fillRect(0, 0, w, h);
+
+        context.fillStyle = 'rgba(229,225,199,.72)';
+        for (let i = 0; i < STAR_COUNT; i += 1) {
+          const j = i * 4;
+          const depth = stars[j + 3];
+          const x = (stars[j] * w + t * w * .016 * depth) % w;
+          const y = (stars[j + 1] * h + t * h * .035 * depth) % h;
+          const size = stars[j + 2] * (1 - descend * .36);
+          context.globalAlpha = (.22 + depth * .55) * (1 - b * .76);
+          context.fillRect(x, y, size, size);
+        }
+        context.globalAlpha = 1;
+
+        const scale = mix(.72, 2.7, descend);
+        const matchY = orbitReferenceY(t);
+        const coastX = w * (.58 - descend * .12);
+        const coastY = matchY - h * .17 * scale;
+
+        context.save();
+        context.translate(coastX, coastY);
+        context.scale(scale, scale);
+
+        context.beginPath();
+        context.moveTo(-w * .5, h * .17);
+        context.bezierCurveTo(-w * .24, h * .04, -w * .06, h * .31, w * .12, h * .23);
+        context.bezierCurveTo(w * .28, h * .15, w * .31, h * .37, w * .58, h * .28);
+        context.lineTo(w * .62, h * .86);
+        context.lineTo(-w * .5, h * .86);
+        context.closePath();
+        context.fillStyle = 'rgba(34,31,57,.88)';
+        context.fill();
+        context.strokeStyle = 'rgba(222,199,139,.62)';
+        context.lineWidth = .7 / scale;
+        context.stroke();
+
+        context.strokeStyle = 'rgba(143,139,166,.34)';
+        context.lineWidth = .42 / scale;
+        for (let lane = 0; lane < 4; lane += 1) {
+          context.beginPath();
+          for (let i = 0; i < 48; i += 1) {
+            const x = roadX[i] * w - w * .45;
+            const y = (roadY[i] + lane * .062 - .19) * h;
+            if (i === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+          }
+          context.stroke();
+        }
+
+        for (let i = 0; i < LIGHT_COUNT; i += 1) {
+          const j = i * 4;
+          const nx = lights[j];
+          const ny = lights[j + 1];
+          const coast = .42 + Math.sin(ny * 8 + .6) * .12;
+          if (nx < coast || nx > .93 || ny < .24) continue;
+          const density = lights[j + 2];
+          if (density < .16 + Math.abs(nx - .68) * .44) continue;
+          const x = (nx - .5) * w;
+          const y = (ny - .18) * h;
+          const alpha = (.18 + lights[j + 3] * .72) * (1 - b * .35);
+          context.globalAlpha = alpha;
+          context.fillStyle = density > .82 ? '#f0cb77' : '#c6aa68';
+          const size = density > .86 ? 1.55 / scale : .75 / scale;
+          context.fillRect(x, y, size, size);
+        }
+        context.globalAlpha = 1;
+        context.restore();
+
+        context.strokeStyle = 'rgba(230,221,193,' + (inBand ? .34 : .52) + ')';
+        context.lineWidth = 1;
+        context.setLineDash([2, 7]);
+        context.beginPath();
+        context.moveTo(w * .08, orbitReferenceY(t));
+        context.lineTo(w * .92, orbitReferenceY(t));
+        context.stroke();
+        context.setLineDash([]);
+
+        context.font = '10px "Avenir Next Condensed", sans-serif';
+        context.fillStyle = 'rgba(233,225,199,.58)';
+        context.fillText('34° 02′ N', w * .075, h * .16);
+        context.fillText('REFERENCE / COASTLINE', w * .075, orbitReferenceY(t) - 10);
+        context.fillText('DESCENT VECTOR 172°', w * .76, h * .84);
+      }
+
+      function arch(context, x, y, w, h, wall, dark) {
+        context.fillStyle = wall;
+        context.fillRect(x, y + w * .5, w, h - w * .5);
+        context.beginPath();
+        context.arc(x + w * .5, y + w * .5, w * .5, Math.PI, TAU);
+        context.fill();
+        context.fillStyle = dark;
+        context.fillRect(x + w * .18, y + w * .5, w * .64, h - w * .5);
+        context.beginPath();
+        context.arc(x + w * .5, y + w * .5, w * .32, Math.PI, TAU);
+        context.fill();
+      }
+
+      function drawPlant(context, x, y, s) {
+        context.fillStyle = '#7a653f';
+        context.fillRect(x - 1, y - s * .72, 2, s * .72);
+        context.strokeStyle = '#67704d';
+        context.lineWidth = Math.max(1, s * .025);
+        for (let i = 0; i < 7; i += 1) {
+          const a = -2.8 + i * .56;
+          context.beginPath();
+          context.moveTo(x, y - s * .45);
+          context.quadraticCurveTo(x + Math.sin(a) * s * .3, y - s * .8, x + Math.sin(a) * s * .44, y - s * (.62 + (i % 2) * .23));
+          context.stroke();
+        }
+        context.fillStyle = '#9e4f35';
+        context.beginPath();
+        context.moveTo(x - s * .23, y - s * .28);
+        context.lineTo(x + s * .23, y - s * .28);
+        context.lineTo(x + s * .14, y);
+        context.lineTo(x - s * .14, y);
+        context.closePath();
+        context.fill();
+      }
+
+      function drawArrival(context, t, w, h, noisePattern) {
+        const b = clamp((t - .55) / .15, 0, 1);
+        const glide = easeInOut(clamp((t - .7) / .3, 0, 1));
+        const warm = smooth01(clamp((b - .42) / .58, 0, 1));
+        const refY = arrivalReferenceY(t);
+        const poolLocalY = h * (.52 + glide * .035);
+        const sceneShift = refY - poolLocalY;
+
+        context.fillStyle = warm < .5 ? '#8d7e72' : '#e5cfaa';
+        context.fillRect(0, 0, w, h);
+
+        context.save();
+        context.translate(-glide * w * .055, sceneShift);
+
+        context.fillStyle = warm < .5 ? '#71645f' : '#c37755';
+        context.fillRect(0, -h * .34, w, h * .73);
+        context.fillStyle = warm < .5 ? '#564c4f' : '#873c2d';
+        context.beginPath();
+        context.moveTo(0, -h * .08);
+        context.lineTo(w * .78, h * .39);
+        context.lineTo(w * .18, h * .39);
+        context.closePath();
+        context.fill();
+
+        arch(context, w * .12, -h * .18, w * .17, h * .5, warm < .5 ? '#88766b' : '#e8d4af', warm < .5 ? '#3f3d48' : '#804431');
+        arch(context, w * .34, -h * .15, w * .23, h * .52, warm < .5 ? '#7e6f67' : '#dcbf98', warm < .5 ? '#45414a' : '#6b3a2c');
+        arch(context, w * .64, -h * .2, w * .18, h * .55, warm < .5 ? '#88766b' : '#e8d4af', warm < .5 ? '#403d48' : '#804431');
+
+        context.fillStyle = warm < .5 ? '#79706d' : '#d8ba8e';
+        context.fillRect(0, h * .39, w, h * .61);
+
+        context.fillStyle = warm < .5 ? 'rgba(47,43,49,.35)' : 'rgba(105,52,38,.18)';
+        context.beginPath();
+        context.moveTo(0, h * .39);
+        context.lineTo(w * .48, h * .39);
+        context.lineTo(w * .86, h);
+        context.lineTo(w * .42, h);
+        context.closePath();
+        context.fill();
+
+        const poolX = w * (.38 - glide * .05);
+        const poolY = poolLocalY;
+        const poolW = w * .52;
+        const poolH = h * .28;
+        context.fillStyle = warm < .5 ? '#5b6f72' : '#528c89';
+        context.fillRect(poolX, poolY, poolW, poolH);
+        context.fillStyle = warm < .5 ? 'rgba(206,202,180,.18)' : 'rgba(239,220,180,.34)';
+        context.fillRect(poolX + 3, poolY + 3, poolW - 6, 2);
+        context.strokeStyle = warm < .5 ? 'rgba(219,209,185,.3)' : 'rgba(254,224,177,.48)';
+        context.lineWidth = 1;
+        for (let i = 0; i < 8; i += 1) {
+          const y = poolY + 16 + i * poolH / 9;
+          context.beginPath();
+          context.moveTo(poolX + poolW * (.08 + (i % 2) * .04), y);
+          context.lineTo(poolX + poolW * (.72 + (i % 3) * .06), y);
+          context.stroke();
+        }
+
+        drawPlant(context, w * .2, h * .53, Math.min(w, h) * .18);
+        drawPlant(context, w * .86, h * .48, Math.min(w, h) * .13);
+        context.restore();
+
+        if (noisePattern) {
+          context.save();
+          context.globalAlpha = warm < .5 ? .13 : .2;
+          context.fillStyle = noisePattern;
+          context.fillRect(0, 0, w, h);
+          context.restore();
+        }
+
+        context.strokeStyle = warm < .5 ? 'rgba(237,225,202,.38)' : 'rgba(83,45,35,.38)';
+        context.setLineDash([2, 7]);
+        context.beginPath();
+        context.moveTo(w * .08, refY);
+        context.lineTo(w * .92, refY);
+        context.stroke();
+        context.setLineDash([]);
+
+        context.font = '10px "Avenir Next Condensed", sans-serif';
+        context.fillStyle = warm < .5 ? 'rgba(240,225,202,.54)' : 'rgba(74,39,31,.6)';
+        context.fillText('REFERENCE / POOL EDGE', w * .075, refY - 10);
+        context.fillText('LIGHT VECTOR 172°', w * .75, h * .84);
+
+        if (b < .5) {
+          context.fillStyle = 'rgba(19,18,31,' + (.32 * (1 - b * 2)) + ')';
+          context.fillRect(0, 0, w, h);
+        }
+      }
+
+      function setVisibility(showOrbit, showArrival) {
+        if (showOrbit !== orbitVisible) {
+          orbitVisible = showOrbit;
+          orbitCanvas.style.visibility = showOrbit ? 'visible' : 'hidden';
+        }
+        if (showArrival !== arrivalVisible) {
+          arrivalVisible = showArrival;
+          arrivalCanvas.style.visibility = showArrival ? 'visible' : 'hidden';
+        }
+      }
+
+      function formatAltitude(t) {
+        const metres = 2 * Math.pow(6000, 1 - t);
+        if (metres >= 1000) return (metres / 1000).toFixed(metres >= 10000 ? 1 : 2) + ' km';
+        if (metres >= 100) return metres.toFixed(0) + ' m';
+        if (metres >= 10) return metres.toFixed(1) + ' m';
+        return metres.toFixed(2) + ' m';
+      }
+
+      function updateUI(t, velocity) {
+        const b = clamp((t - .55) / .15, 0, 1);
+        const inBand = t >= .55 && t <= .7;
+        altitudeValue.textContent = formatAltitude(t);
+        bandProgressNode.textContent = Math.round(b * 100) + '%';
+        velocityRatioNode.textContent = ratio.toFixed(2);
+        const lumDelta = inBand ? Math.abs(orbitLuminance(b) - arrivalLuminance(b)) : 0;
+        luminanceDeltaNode.textContent = lumDelta.toFixed(2);
+        root.style.setProperty('--progress', t.toFixed(4));
+        root.style.setProperty('--skew', clamp(velocity / 850, -1.2, 1.2).toFixed(2) + 'deg');
+
+        if (t < .55) {
+          worldLabel.textContent = 'World A / Orbit';
+          phaseNumber.textContent = '01';
+          phaseLabel.textContent = 'Night orbit';
+          meterStatus.textContent = 'Standby';
+        } else if (t <= .7) {
+          worldLabel.textContent = 'World A + B / Handoff';
+          phaseNumber.textContent = '02';
+          phaseLabel.textContent = 'Matched descent';
+          meterStatus.textContent = ratio >= .8 && ratio <= 1.25 ? 'Locked' : 'Tune';
+        } else {
+          worldLabel.textContent = 'World B / Arrival';
+          phaseNumber.textContent = '03';
+          phaseLabel.textContent = 'Human height';
+          meterStatus.textContent = 'Arrived';
+        }
+        body.classList.toggle('is-warm', t > .76);
+      }
+
+      function render(t, dt, velocity, force) {
+        if (reduced && !force) return;
+        if (!force && Math.abs(t - lastT) < .000001 && Math.abs(velocity) < .01) return;
+        const inBand = t >= .55 && t <= .7;
+        const showA = t <= .7;
+        const showB = t >= .55;
+        setVisibility(showA, showB);
+
+        if (showA) drawOrbit(orbit, t, width, height);
+        if (showB) drawArrival(arrival, t, width, height, arrivalNoisePattern);
+
+        if (inBand) {
+          const b = clamp((t - .55) / .15, 0, 1);
+          const fade = smooth01(b);
+          orbitCanvas.style.opacity = (1 - fade).toFixed(4);
+          arrivalCanvas.style.opacity = fade.toFixed(4);
+          const ay = orbitReferenceY(t);
+          const by = arrivalReferenceY(t);
+          if (lastT >= .55 && lastT <= .7 && Math.abs(t - lastT) > .000001) {
+            const speedA = Math.abs(ay - previousA);
+            const speedB = Math.abs(by - previousB);
+            ratio = speedB > .00001 ? speedA / speedB : 1;
+          } else ratio = 1;
+          previousA = ay;
+          previousB = by;
+        } else {
+          orbitCanvas.style.opacity = '1';
+          arrivalCanvas.style.opacity = '1';
+          ratio = 1;
+        }
+        updateUI(t, velocity);
+        lastT = t;
+      }
+
+      function renderReducedPlates() {
+        const canvases = document.querySelectorAll('.plate canvas');
+        for (let i = 0; i < canvases.length; i += 1) {
+          const canvas = canvases[i];
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const pw = Math.max(1, rect.width);
+          const ph = Math.max(1, rect.height);
+          const context = canvas.getContext('2d');
+          configureCanvas(canvas, context, pw, ph);
+          const plateNoise = context.createPattern(noiseTile, 'repeat');
+          if (i === 0) drawOrbit(context, .12, pw, ph);
+          else if (i === 1) {
+            drawOrbit(context, .625, pw, ph);
+            context.save();
+            context.globalAlpha = .5;
+            drawArrival(context, .625, pw, ph, plateNoise);
+            context.restore();
+          } else drawArrival(context, .88, pw, ph, plateNoise);
+        }
+      }
+
+      function cancelGuided() {
+        if (!guidedActive) return;
+        guidedActive = false;
+        guidedLabel.classList.remove('is-active');
+      }
+
+      function resumeInteractive() {
+        deterministic = false;
+        cancelGuided();
+      }
+
+      const engine = new ManderMotion({
+        lengthVh: 460,
+        lerp: .085,
+        onInput: resumeInteractive,
+        onFrame(t, dt, velocity, time) {
+          if (guidedActive) {
+            const elapsed = clamp((time - guidedStart) / 30000, 0, 1);
+            engine.scrollTo(easeInOut(elapsed) * engine.total, true);
+            t = engine.current / engine.total;
+            if (elapsed >= 1) cancelGuided();
+          }
+          if (!deterministic) render(t, dt, velocity, false);
+        }
+      });
+
+      function startGuided() {
+        deterministic = false;
+        guidedActive = true;
+        guidedStart = performance.now();
+        engine.scrollTo(0, true);
+        guidedLabel.classList.add('is-active');
+      }
+
+      addEventListener('keydown', event => {
+        if (event.key === 'a' || event.key === 'A') {
+          event.preventDefault();
+          cancelGuided();
+          annotation.classList.toggle('is-visible');
+        } else if (event.key === 'g' || event.key === 'G') {
+          event.preventDefault();
+          if (guidedActive) cancelGuided(); else startGuided();
+        }
+      });
+      addEventListener('pointerdown', resumeInteractive, { passive: true });
+      addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) cancelGuided();
+      });
+
+      window.__timeline = value => {
+        deterministic = true;
+        cancelGuided();
+        const t = clamp(Number(value) || 0, 0, 1);
+        engine.scrollTo(t * engine.total, true);
+        render(t, 1 / 60, 0, true);
+        const b = clamp((t - .55) / .15, 0, 1);
+        return {
+          progress: t,
+          world: t < .55 ? 'orbit' : t <= .7 ? 'handoff' : 'arrival',
+          altitude: formatAltitude(t),
+          velocityRatio: ratio,
+          luminanceDelta: t >= .55 && t <= .7 ? Math.abs(orbitLuminance(b) - arrivalLuminance(b)) : 0,
+          bandProgress: b
+        };
+      };
+
+      initialiseFields();
+      makeNoise();
+      if (reduced) body.classList.add('reduced');
+      resize();
+      engine.start();
+      console.info('[ManderMotion] boot / one scalar / 460vh');
+      console.info('[Study 05] engine boot / DPR ' + dpr.toFixed(2) + ' / reduced ' + reduced);
+      console.info('[Study 05] timeline ready / window.__timeline(t)');
+    })();
+  </script>
+</body>
+</html>

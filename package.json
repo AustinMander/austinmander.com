@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "sync:studies": "node scripts/sync-studies.mjs",
+    "check:studies": "node scripts/sync-studies.mjs --check",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

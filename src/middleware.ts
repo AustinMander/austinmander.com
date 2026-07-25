@@ -161,11 +161,19 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value);
   });
   
-  // Apply Content Security Policy
-  // (skipped for the static byline homepage — it is fully inline by design)
+  // Apply Content Security Policy.
+  // Skipped for pages that are fully inline by design and would be broken by the
+  // nonce + strict-dynamic policy: the static byline homepage, and the craft
+  // ports under /studies/ (single-file pages carrying their own scroll engines
+  // and shaders, with no external requests at all). The /studies gallery itself
+  // is an ordinary page and keeps the policy.
   const csp = getCSP(nonce);
   const p = request.nextUrl.pathname;
-  if (p !== '/' && p !== '/byline.html') {
+  const isFullyInlinePage =
+    p === '/' ||
+    p === '/byline.html' ||
+    (p.startsWith('/studies/') && p !== '/studies/index.html');
+  if (!isFullyInlinePage) {
     response.headers.set('Content-Security-Policy', csp);
   }
   

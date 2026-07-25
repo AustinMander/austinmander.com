@@ -1,0 +1,124 @@
+{
+  "source": "motion-lab",
+  "published": [
+    {
+      "slug": "study-05",
+      "kind": "study",
+      "title": "Study 05 / Two worlds, one camera",
+      "intent": "This study rebuilds the crossfade as two fully procedural Canvas 2D worlds driven by one virtual-scroll scalar. Orbit owns `0.00–0.55`, both renderers run only through the `0.55–0.70` handoff, and arrival owns `0.70–1.00`. The visual contrast is deliberate: a point-grid cartographic night gives way to a flat, warm editorial courtyard without resetting the camera or altitude readout.",
+      "href": "/studies/study-05",
+      "bytes": 36875,
+      "assets": []
+    },
+    {
+      "slug": "study-07",
+      "kind": "study",
+      "title": "Study 07 / The autopilot",
+      "intent": "This study treats pacing as the authored material. Five editorial segments share one virtual-scroll scalar. Three statements are held longer than the two canvas interludes, so the automatic pass has deliberate pauses and quicker transits instead of constant speed.",
+      "href": "/studies/study-07",
+      "bytes": 64969,
+      "assets": []
+    },
+    {
+      "slug": "study-08",
+      "kind": "study",
+      "title": "Study 08 / The seam",
+      "intent": "This study makes the WebGL scene and semantic DOM typography read as one spatial rig. Six procedural glass slabs and five real text statements occupy fixed world coordinates. A single virtual-scroll scalar moves one camera through the set.",
+      "href": "/studies/study-08",
+      "bytes": 46507,
+      "assets": []
+    },
+    {
+      "slug": "study-09",
+      "kind": "study",
+      "title": "Study 09 / A million, exactly",
+      "intent": "This study makes the particle count auditable. The live path allocates one storage buffer containing fixed 32-byte structs. The HUD derives the displayed population from `GPUBuffer.size / 32`; it does not reuse the requested count as display copy.",
+      "href": "/studies/study-09",
+      "bytes": 51329,
+      "assets": []
+    },
+    {
+      "slug": "study-10",
+      "kind": "study",
+      "title": "Study 10 / The considered pause",
+      "intent": "This study treats scroll effects as retention mechanics. The reader moves through a long essay about generated abundance, adversarial review and engineer-signed authorship. Three full-bleed plates interrupt that reading rhythm. Each plate stays fixed while several passages cross it, then releases the reader back into ordinary prose.",
+      "href": "/studies/study-10",
+      "bytes": 36230,
+      "assets": []
+    },
+    {
+      "slug": "burn-ledger",
+      "kind": "artefact",
+      "title": "The Burn Ledger",
+      "intent": "This graphic encodes the supplied run-ledger notes only. The horizontal clock is deliberately labelled approximate because the source notes do not provide precise timestamps.",
+      "href": "/studies/burn-ledger",
+      "bytes": 5459,
+      "assets": [
+        "render.js"
+      ]
+    },
+    {
+      "slug": "editions",
+      "kind": "artefact",
+      "title": "Mander Editions",
+      "intent": "`EDITIONS 001–012` uses one layered flow-field system throughout the series. Seeded multi-octave value noise steers line-integral paths through a fixed print field. Edition parameters alter density, scale, curl, directional drift, and a restrained ink set while preserving one visual grammar.",
+      "href": "/studies/editions",
+      "bytes": 29670,
+      "assets": []
+    },
+    {
+      "slug": "foundation-sheet",
+      "kind": "artefact",
+      "title": "Foundation Sheet 01",
+      "intent": "The sheet uses a two-layer token model inside the single `index.html` file.",
+      "href": "/studies/foundation-sheet",
+      "bytes": 51079,
+      "assets": []
+    },
+    {
+      "slug": "rebuilt-01-tilt",
+      "kind": "artefact",
+      "title": "Rebuilt 01: Tilt",
+      "intent": "Measured from `index.html` after the final source edit on 22 July 2026:",
+      "href": "/studies/rebuilt-01-tilt",
+      "bytes": 26160,
+      "assets": []
+    },
+    {
+      "slug": "rebuilt-02-beams",
+      "kind": "artefact",
+      "title": "Rebuilt 02: Beams and spotlight",
+      "intent": "Measured from `index.html` after the final source edit on 22 July 2026:",
+      "href": "/studies/rebuilt-02-beams",
+      "bytes": 26947,
+      "assets": []
+    }
+  ],
+  "held": [
+    {
+      "slug": "constellation",
+      "kind": "artefact",
+      "title": "K1 / The Constellation",
+      "reasons": [
+        "internal brief ID visible on the page: K1"
+      ]
+    },
+    {
+      "slug": "constellation-depth",
+      "kind": "artefact",
+      "title": "K2 / Constellation Depth",
+      "reasons": [
+        "internal brief ID visible on the page: K2"
+      ]
+    },
+    {
+      "slug": "three-specimens",
+      "kind": "artefact",
+      "title": "Specimen Hall / T1",
+      "reasons": [
+        "internal brief ID visible on the page: T1",
+        "unresolved reference \"/src/main.js\" (needs a build step, not a copy)"
+      ]
+    }
+  ]
+}
