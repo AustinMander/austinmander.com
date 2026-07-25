@@ -169,10 +169,17 @@ export async function middleware(request: NextRequest) {
   // is an ordinary page and keeps the policy.
   const csp = getCSP(nonce);
   const p = request.nextUrl.pathname;
+  // Everything under /studies is a static file carrying its own inline <style>,
+  // the gallery included. An earlier version exempted only the piece pages, on
+  // the theory that the gallery was an ordinary page. It is not, and the policy
+  // stripped its styling in production: under CSP Level 3 the presence of a
+  // nonce DISABLES 'unsafe-inline', so the inline stylesheet was blocked and the
+  // page rendered as unstyled default HTML.
   const isFullyInlinePage =
     p === '/' ||
     p === '/byline.html' ||
-    (p.startsWith('/studies/') && p !== '/studies/index.html');
+    p === '/studies' ||
+    p.startsWith('/studies/');
   if (!isFullyInlinePage) {
     response.headers.set('Content-Security-Policy', csp);
   }
