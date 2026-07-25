@@ -230,13 +230,17 @@ function gate(piece, ids) {
 function inlineAssets(html, dir) {
   let out = html;
   out = out.replace(
-    /<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/script>/gi,
-    (whole, ref) => {
+    /<script\b([^>]*)\bsrc="([^"]+)"([^>]*)>\s*<\/script>/gi,
+    (whole, before, ref, after) => {
       if (/^(https?:|data:|\/\/|\/)/i.test(ref)) return whole;
       const file = join(dir, ref.split(/[?#]/)[0].replace(/^\.?\//, ""));
       if (!existsSync(file)) return whole;
+      // Carry type through. Dropping type="module" would silently change the
+      // script's semantics, which is a worse failure than not inlining at all.
+      const type = /\btype="([^"]+)"/i.exec(before + after);
+      const attr = type ? ` type="${type[1]}"` : "";
       const js = readFileSync(file, "utf8").replace(/<\/script>/gi, "<\\/script>");
-      return `<script>\n/* inlined from ${ref} at publish time */\n${js}\n</script>`;
+      return `<script${attr}>\n/* inlined from ${ref} at publish time */\n${js}\n</script>`;
     },
   );
   out = out.replace(

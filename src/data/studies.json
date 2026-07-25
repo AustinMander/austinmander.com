@@ -72,8 +72,9 @@
       "title": "The Burn Ledger",
       "intent": "This graphic encodes the supplied run-ledger notes only. The horizontal clock is deliberately labelled approximate because the source notes do not provide precise timestamps.",
       "href": "/studies/burn-ledger",
-      "bytes": 5459,
+      "bytes": 5500,
       "assets": [
+        "data-bundle.js",
         "render.js"
       ],
       "allowances": []
