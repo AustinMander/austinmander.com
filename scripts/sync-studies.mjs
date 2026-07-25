@@ -221,6 +221,36 @@ function gate(piece, ids) {
   return { html, notes, assets, reasons, allowances };
 }
 
+// Pieces are served at an extensionless URL, /studies/<slug>, so a relative
+// src="engine.js" resolves to /studies/engine.js and 404s. Copying the sibling
+// was not enough: the file was reachable, the page was not able to reach it.
+// Inlining at publish time makes the published piece genuinely self-contained,
+// which is the house rule anyway, while the source keeps its separate modules so
+// they stay testable outside a browser.
+function inlineAssets(html, dir) {
+  let out = html;
+  out = out.replace(
+    /<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/script>/gi,
+    (whole, ref) => {
+      if (/^(https?:|data:|\/\/|\/)/i.test(ref)) return whole;
+      const file = join(dir, ref.split(/[?#]/)[0].replace(/^\.?\//, ""));
+      if (!existsSync(file)) return whole;
+      const js = readFileSync(file, "utf8").replace(/<\/script>/gi, "<\\/script>");
+      return `<script>\n/* inlined from ${ref} at publish time */\n${js}\n</script>`;
+    },
+  );
+  out = out.replace(
+    /<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"[^>]*>/gi,
+    (whole, ref) => {
+      if (/^(https?:|data:|\/\/|\/)/i.test(ref)) return whole;
+      const file = join(dir, ref.split(/[?#]/)[0].replace(/^\.?\//, ""));
+      if (!existsSync(file)) return whole;
+      return `<style>\n/* inlined from ${ref} at publish time */\n${readFileSync(file, "utf8")}\n</style>`;
+    },
+  );
+  return out;
+}
+
 function renderGallery(published) {
   const cards = published
     .map(
@@ -359,7 +389,7 @@ function main() {
       const dest = join(OUT_DIR, piece.slug);
       rmSync(dest, { recursive: true, force: true });
       mkdirSync(dest, { recursive: true });
-      copyFileSync(join(piece.dir, "index.html"), join(dest, "index.html"));
+      writeFileSync(join(dest, "index.html"), inlineAssets(html, piece.dir));
       for (const asset of assets) {
         const to = join(dest, asset);
         mkdirSync(dirname(to), { recursive: true });

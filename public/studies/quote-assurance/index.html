@@ -5,200 +5,724 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quote Assurance</title>
 <meta name="description" content="A pre-send checker for a commercial electrical quote. It shows the evidence behind every result and refuses to bless anything it cannot verify.">
-<meta name="theme-color" content="#f2f1ed">
+<meta name="theme-color" content="#faf8f3">
 <style>
 :root{
-  --paper:#f2f1ed; --card:#fbfaf8; --sunk:#e8e7e1;
-  --line:#d3d1c8; --line-soft:#e2e0d8;
-  --ink:#16181c; --muted:#4d5058; --faint:#7b7e86;
-  --madder:#a83a24; --madder-soft:#f6e6e1;
-  --amber:#9a6a10; --amber-soft:#f8efdc;
-  --pass:#2f5d45; --pass-soft:#e7efe9;
+  --paper:#faf8f3; --leaf:#fffdf8; --sunk:#f1ede3;
+  --rule:#ded8ca; --hair:#eae4d6;
+  --ink:#191713; --body:#33302a; --muted:#6b665b; --faint:#948e80;
+  --red:#a8341f; --red-wash:#f7e9e4;
+  --amber:#8a5e0c; --amber-wash:#f8f0dc;
+  --green:#2f5c42; --green-wash:#e9f0ea;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --serif:georgia,"Times New Roman",serif;
 }
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);
-  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.shell{max-width:1340px;margin:0 auto;padding:clamp(20px,4vw,52px)}
-h1{font-family:var(--serif);font-size:clamp(28px,4.5vw,44px);font-weight:600;margin:0 0 10px;letter-spacing:-.01em}
-.lede{margin:0;max-width:60ch;color:var(--muted);font-size:14px}
-.lede b{color:var(--ink);font-weight:500}
-.synthetic{display:inline-block;margin-top:14px;font-size:10px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--madder);border:1px solid var(--madder);padding:5px 9px}
-.legend{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+body{margin:0;background:var(--paper);color:var(--body);
+  font-family:var(--serif);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.shell{max-width:1180px;margin:0 auto;padding:clamp(24px,5vw,72px) clamp(18px,4vw,56px)}
+.micro{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
 
-/* Fixture picker */
-.fixtures{display:flex;flex-wrap:wrap;gap:6px;margin:26px 0 0}
-.fx{font-family:var(--mono);font-size:11px;background:var(--card);color:var(--ink);
-  border:1px solid var(--line);padding:9px 11px;cursor:pointer;text-align:left;min-height:44px}
-.fx:hover{border-color:var(--muted)}
-.fx:focus-visible{outline:2px solid var(--madder);outline-offset:2px}
-.fx[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.fx small{display:block;color:var(--faint);font-size:10px;margin-top:2px}
-.fx[aria-pressed="true"] small{color:#b9bcc4}
+/* Masthead --------------------------------------------------------------- */
+.mast{display:grid;gap:26px;grid-template-columns:1fr;align-items:end;
+  padding-bottom:26px;border-bottom:2px solid var(--ink)}
+@media (min-width:900px){.mast{grid-template-columns:1.5fr 1fr}}
+h1{font-family:var(--serif);font-size:clamp(34px,6vw,60px);font-weight:400;
+  letter-spacing:-.02em;line-height:1;margin:10px 0 14px}
+.lede{margin:0;max-width:52ch;color:var(--muted);font-size:16px}
+.lede em{font-style:italic;color:var(--ink)}
+.mast__meta{font-family:var(--mono);font-size:10.5px;line-height:2;color:var(--faint);
+  border-left:1px solid var(--rule);padding-left:18px}
+.mast__meta b{color:var(--body);font-weight:400}
 
-/* Verdict */
-.verdict{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;margin:24px 0 0;
-  padding:16px 18px;border:1px solid var(--line);background:var(--card)}
-.verdict__badge{font-family:var(--serif);font-size:26px;font-weight:600;padding:4px 16px;border:2px solid}
-.v-SEND{color:var(--pass);border-color:var(--pass);background:var(--pass-soft)}
-.v-REVIEW{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
-.v-HOLD{color:var(--madder);border-color:var(--madder);background:var(--madder-soft)}
-.verdict__why{font-size:12px;color:var(--muted);max-width:56ch}
-.verdict__meta{margin-left:auto;font-size:10px;color:var(--faint);text-align:right;line-height:1.7}
+/* Fixture strip ---------------------------------------------------------- */
+.strip{margin:30px 0 0}
+/* A grid, not a flex row. Flex-grow left the wrapped final row stretched into
+   three enormous cells while the first row held seven small ones. */
+/* Exactly five across so ten fixtures fill two rows with no orphan cells. */
+.strip__rail{display:grid;grid-template-columns:repeat(5,1fr);
+  border:1px solid var(--rule);gap:1px;background-color:var(--hair)}
+@media (max-width:900px){.strip__rail{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.strip__rail{grid-template-columns:1fr}}
+.fx{min-height:56px;text-align:left;cursor:pointer;background:var(--leaf);border:0;
+  padding:10px 13px;font-family:var(--serif);font-size:14px;color:var(--body)}
+.fx:hover{background:var(--sunk)}
+.fx:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+.fx[aria-pressed="true"]{background:var(--ink);color:var(--leaf)}
+.fx span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  color:var(--faint);margin-top:3px}
+.fx[aria-pressed="true"] span{color:#a8a294}
 
-/* Two columns */
-.work{display:grid;gap:18px;grid-template-columns:1fr;margin-top:18px;align-items:start}
-@media (min-width:1080px){.work{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-.pane{border:1px solid var(--line);background:var(--card)}
-.pane__head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
-  padding:12px 16px;border-bottom:1px solid var(--line-soft);background:var(--sunk)}
-.pane__head h2{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-  font-weight:500;margin:0;color:var(--muted)}
-.pane__note{font-size:10px;color:var(--faint)}
+/* The document ----------------------------------------------------------- */
+.sheet{position:relative;margin-top:30px;background:var(--leaf);
+  border:1px solid var(--rule);box-shadow:0 1px 0 var(--hair),0 18px 40px -34px rgba(25,23,19,.5)}
+/* Three parts that never overlap: who it is, what it references, and the stamp.
+   An earlier version floated the stamp over the corner and it landed straight on
+   top of the reference block. */
+.sheet__head{display:flex;flex-wrap:wrap;gap:20px 26px;align-items:center;
+  padding:26px clamp(18px,3vw,34px) 22px;border-bottom:1px solid var(--rule)}
+.sheet__id{flex:1 1 220px}
+.sheet__title{font-size:22px;color:var(--ink);margin:6px 0 0}
+.sheet__ref{font-family:var(--mono);font-size:10.5px;line-height:1.9;color:var(--faint);
+  flex:0 1 auto;text-align:right;margin-left:auto}
+.sheet__ref b{color:var(--body);font-weight:400}
 
-/* Quote document */
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;font-weight:500;color:var(--faint);font-size:10px;letter-spacing:.1em;
-  text-transform:uppercase;padding:9px 10px;border-bottom:1px solid var(--line-soft)}
-td{padding:8px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
-tr:last-child td{border-bottom:0}
-.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.line--flagged{background:var(--madder-soft);box-shadow:inset 3px 0 0 var(--madder)}
-.line--unverified{background:repeating-linear-gradient(135deg,transparent,transparent 5px,#eceae2 5px,#eceae2 10px);
-  box-shadow:inset 3px 0 0 var(--faint)}
-.line--off{opacity:.4}
-.line--off .desc{text-decoration:line-through}
-.qty{width:74px;font-family:var(--mono);font-size:12px;text-align:right;padding:3px 5px;
-  border:1px solid var(--line);background:var(--paper);color:var(--ink)}
-.qty:focus-visible{outline:2px solid var(--madder);outline-offset:1px}
-.drop{background:none;border:1px solid var(--line);color:var(--faint);cursor:pointer;
-  font-family:var(--mono);font-size:10px;padding:3px 6px;min-width:30px}
-.drop:hover{border-color:var(--madder);color:var(--madder)}
-.drop:focus-visible{outline:2px solid var(--madder);outline-offset:1px}
-.totals{padding:12px 16px;border-top:1px solid var(--line);display:flex;
-  justify-content:space-between;font-size:12px;background:var(--sunk)}
-.excl{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted)}
-.excl b{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;font-weight:500}
+/* Stamp: the taste moment. Inked, rotated, slightly imperfect. */
+.stamp{flex:0 0 auto;
+  font-family:var(--sans);font-weight:700;font-size:clamp(22px,3.2vw,34px);letter-spacing:.14em;
+  padding:9px 18px 8px;border:3px double currentColor;border-radius:3px;
+  transform:rotate(-4deg);opacity:.9;pointer-events:none;line-height:1;
+  text-shadow:0 0 1px currentColor}
+.s-SEND{color:var(--green)}
+.s-REVIEW{color:var(--amber)}
+.s-HOLD{color:var(--red)}
+.stamp small{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.2em;
+  font-weight:400;text-align:center;margin-top:5px;opacity:.8}
 
-/* Results */
-.results{padding:10px}
-.res{border:1px solid var(--line-soft);margin-bottom:8px;background:var(--paper)}
-.res:last-child{margin-bottom:0}
-.res__top{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;
-  padding:11px 13px;background:none;border:0;cursor:pointer;font-family:var(--mono);
-  font-size:12px;color:var(--ink)}
-.res__top:focus-visible{outline:2px solid var(--madder);outline-offset:-2px}
-.tag{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;
-  border:1px solid;white-space:nowrap;font-weight:500}
-.t-PASS{color:var(--pass);border-color:var(--pass);background:var(--pass-soft)}
-.t-FAIL{color:var(--madder);border-color:var(--madder);background:var(--madder-soft)}
-/* Not a warning. Not filled. "I did not check this" is its own state, and it
-   must not look like a milder version of "this is wrong". */
-.t-CANNOT_VERIFY{color:var(--faint);border-color:var(--faint);background:transparent;border-style:dashed}
-.res__name{font-weight:500}
-.res__sum{color:var(--muted);display:block;margin-top:3px;font-weight:400}
-.res__body{display:none;padding:0 13px 13px;font-size:11px;color:var(--muted)}
-.res.open .res__body{display:block}
-.res__body h4{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
-  margin:10px 0 5px;font-weight:500}
-.calc{font-family:var(--mono);background:var(--sunk);padding:8px 10px;font-size:11px;color:var(--ink);
-  overflow-x:auto;white-space:pre-wrap;word-break:break-word}
-.ev{margin:0;padding-left:16px}
-.ev li{margin-bottom:3px}
-.rem{color:var(--ink)}
+table{width:100%;border-collapse:collapse}
+thead th{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);font-weight:400;text-align:left;padding:12px 10px;
+  border-bottom:1px solid var(--rule)}
+tbody td{padding:11px 10px;border-bottom:1px solid var(--hair);vertical-align:baseline;font-size:15px}
+tbody tr:last-child td{border-bottom:0}
+.gut{width:34px;padding-left:clamp(18px,3vw,34px)!important;font-family:var(--mono);
+  font-size:10px;color:var(--red)}
+.pad-r{padding-right:clamp(18px,3vw,34px)!important}
+.ref{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.desc{color:var(--ink)}
+.src{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:3px}
+.num{text-align:right;white-space:nowrap}
+.qty{width:66px;font-family:var(--mono);font-size:13px;text-align:right;padding:3px 6px;
+  border:0;border-bottom:1px dotted var(--faint);background:transparent;color:var(--ink)}
+.qty:hover{background:var(--sunk)}
+.qty:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.drop{background:none;border:0;color:var(--faint);cursor:pointer;font-family:var(--mono);
+  font-size:14px;line-height:1;padding:4px 6px}
+.drop:hover{color:var(--red)}
+.drop:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+tr.marked td{background:var(--red-wash)}
+tr.unmarked td{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--sunk) 6px,var(--sunk) 12px)}
+tr.off td{opacity:.38}
+tr.off .desc{text-decoration:line-through}
+.sheet__foot{display:flex;flex-wrap:wrap;gap:10px 30px;justify-content:space-between;
+  padding:18px clamp(18px,3vw,34px);border-top:1px solid var(--rule);background:var(--sunk)}
+.tot{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tot b{display:block;font-family:var(--serif);font-size:20px;color:var(--ink);font-weight:400;margin-top:3px}
+.excl{padding:16px clamp(18px,3vw,34px);border-top:1px solid var(--hair);font-size:14px;color:var(--muted)}
+.excl i{font-style:italic}
 
-/* Scoreboard */
-.score{margin-top:26px;border:1px solid var(--line);background:var(--card)}
-.score__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line-soft)}
-.score__cell{background:var(--card);padding:14px 16px}
-.score__n{font-family:var(--serif);font-size:30px;line-height:1;color:var(--ink)}
-.score__l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:7px;display:block;line-height:1.5}
-.score__note{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted)}
+/* Margin annotations ----------------------------------------------------- */
+.annot{margin-top:30px}
+.annot__rule{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+.annot__rule::after{content:"";flex:1;border-bottom:1px solid var(--rule)}
+.note{display:grid;grid-template-columns:26px 1fr;gap:0 14px;padding:14px 0;
+  border-bottom:1px solid var(--hair)}
+.note:last-child{border-bottom:0}
+.note__n{font-family:var(--mono);font-size:11px;color:var(--red);padding-top:2px}
+.note--pass .note__n{color:var(--green)}
+.note--cannot .note__n{color:var(--faint)}
+.note__hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;width:100%;
+  background:none;border:0;padding:0;cursor:pointer;text-align:left;font-family:inherit}
+.note__hd:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.note__name{font-size:17px;color:var(--ink)}
+.chip{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+  padding:3px 7px;border:1px solid}
+.c-PASS{color:var(--green);border-color:var(--green);background:var(--green-wash)}
+.c-FAIL{color:var(--red);border-color:var(--red);background:var(--red-wash)}
+/* Unfilled and dashed. Not a milder failure: the absence of a check. */
+.c-CANNOT_VERIFY{color:var(--faint);border-color:var(--faint);border-style:dashed;background:none}
+.note__sum{margin:5px 0 0;color:var(--muted);font-size:15px;max-width:62ch}
+.note__body{display:none;margin-top:12px}
+.note.open .note__body{display:block}
+.note__body h4{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin:14px 0 6px;font-weight:400}
+.calc{font-family:var(--mono);font-size:11.5px;color:var(--ink);background:var(--sunk);
+  padding:10px 12px;border-left:2px solid var(--rule);white-space:pre-wrap;word-break:break-word}
+.ev{margin:0;padding-left:0;list-style:none;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ev li{padding:3px 0 3px 14px;border-left:1px solid var(--hair)}
+.rem{margin:0;font-size:15px;color:var(--ink);font-style:italic}
 
-.essay{margin-top:clamp(38px,6vh,72px);padding-top:26px;border-top:1px solid var(--line);
-  font-family:var(--serif);font-size:16px;line-height:1.65;color:#33363c}
-.essay p{max-width:66ch;margin:0 0 16px}
-.essay strong{color:var(--ink)}
-.colophon{font-family:var(--mono);font-size:10px;color:var(--faint);line-height:1.8;max-width:none;
-  margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+/* Scoreboard ------------------------------------------------------------- */
+.score{margin-top:44px;border-top:2px solid var(--ink);padding-top:20px}
+.score__row{display:grid;gap:26px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:16px}
+.score__n{font-size:38px;color:var(--ink);line-height:1;display:block}
+.score__l{font-size:13px;color:var(--muted);margin-top:6px;display:block;line-height:1.45}
+.score__note{margin:22px 0 0;font-size:14px;color:var(--muted);max-width:70ch;font-style:italic}
+
+.essay{margin-top:52px;padding-top:24px;border-top:1px solid var(--rule);font-size:16.5px;line-height:1.66}
+.essay p{max-width:66ch;margin:0 0 18px}
+.essay strong{color:var(--ink);font-weight:600}
+.colophon{font-family:var(--mono);font-size:10.5px;line-height:1.85;color:var(--faint);
+  max-width:none;margin-top:26px;padding-top:16px;border-top:1px solid var(--hair)}
 .vh{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:700px){ .fx{flex:1 1 100%} .verdict__meta{margin-left:0;text-align:left} }
+@media (max-width:640px){
+  .fx{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--hair)}
+  .stamp{position:static;display:inline-block;transform:rotate(-3deg);margin-top:12px}
+  .gut{width:26px}
+  thead th:nth-child(4),tbody td:nth-child(4){display:none}
+}
 </style>
 </head>
 <body>
 <div class="shell">
 
-  <header>
-    <h1>Quote Assurance</h1>
-    <p class="lede">A pre-send checker for a commercial electrical quote. It compares the draft
-      against the job schedule, the contractor's own price book and past jobs, shows the evidence
-      behind every result, and <b>refuses to bless anything it cannot verify</b>.</p>
-    <p class="synthetic">Synthetic demonstration data</p>
+  <header class="mast">
+    <div>
+      <p class="micro">Concept proof</p>
+      <h1>Quote Assurance</h1>
+      <p class="lede">A pre-send check on a commercial electrical quote. It reads the draft against
+        the job schedule, the contractor's own price book and past jobs, shows its working, and
+        <em>refuses to bless anything it cannot verify</em>.</p>
+    </div>
+    <div class="mast__meta">
+      Policy <b id="mPolicy"></b><br>
+      Evaluated <b id="mDate"></b><br>
+      Checks <b>7 per draft</b><br>
+      Fixtures <b>10 drafts, 8 seeded</b><br>
+      <span style="color:var(--red)">Synthetic demonstration data</span>
+    </div>
   </header>
 
-  <p class="legend" style="margin-top:26px">Pick a draft</p>
-  <div class="fixtures" id="fixtures"></div>
+  <section class="strip">
+    <p class="micro">Pick a draft</p>
+    <div class="strip__rail" id="fixtures"></div>
+  </section>
 
-  <div class="verdict" id="verdict"></div>
-
-  <div class="work">
-    <section class="pane">
-      <div class="pane__head">
-        <h2>The draft quote</h2>
-        <span class="pane__note">Change a quantity or drop a line and it re-checks</span>
+  <section class="sheet">
+    <div class="sheet__head">
+      <div class="sheet__id">
+        <p class="micro">Draft quotation</p>
+        <h2 class="sheet__title" id="sheetTitle"></h2>
       </div>
-      <div id="doc"></div>
-    </section>
+      <div class="sheet__ref" id="sheetRef"></div>
+      <div class="stamp" id="stamp"></div>
+    </div>
+    <div id="doc"></div>
+  </section>
 
-    <section class="pane">
-      <div class="pane__head">
-        <h2>Checks</h2>
-        <span class="pane__note">Click a check to see its evidence</span>
-      </div>
-      <div class="results" id="results"></div>
-    </section>
-  </div>
+  <section class="annot">
+    <div class="annot__rule">
+      <p class="micro" style="margin:0">Marked up</p>
+    </div>
+    <div id="notes"></div>
+  </section>
 
   <section class="score">
-    <div class="pane__head"><h2>Scored against every fixture</h2>
-      <span class="pane__note">Recomputed live, in the browser</span></div>
-    <div class="score__grid" id="score"></div>
-    <p class="score__note" id="scoreNote"></p>
+    <p class="micro" style="margin:0">Scored against every fixture, recomputed live</p>
+    <div class="score__row" id="score"></div>
+    <p class="score__note">Catch rate and clean-send rate are scored separately. A checker that
+      holds everything scores full marks on catches and is worthless, which is what the two clean
+      controls exist to prevent.</p>
   </section>
 
   <section class="essay">
-    <p>Every check here returns one of three answers, and the third one is the point.
-      <strong>PASS</strong> means it was checked and it held. <strong>FAIL</strong> means it was
-      checked and it did not. <strong>CANNOT VERIFY</strong> means the evidence needed to check it
-      was missing, so no answer is offered at all. That last state is drawn unfilled and dashed
-      rather than in a warning colour, because it is not a milder kind of failure. It is the
-      absence of a check, and the whole argument is that those two things must never look alike.</p>
-    <p>So the checker cannot pass by being agreeable. Two of the ten drafts are clean controls
-      that must come back <strong>SEND</strong>, which is what stops it flagging everything and
-      calling that diligence. One draft has no schedule to compare against and one line with no
-      price source, and the correct behaviour there is to produce no scope verdict, no margin and
-      no exposure figure. It says what it could not check and what it would need. It does not
-      reach for a market average to fill the hole.</p>
-    <p>The verdict is arithmetic, not prose. Any missing evidence or any high finding is a
-      <strong>HOLD</strong>; anything medium is a <strong>REVIEW</strong>; otherwise
-      <strong>SEND</strong>. No summary, confidence score or interface action can promote it. And
-      SEND means only that these checks passed on these source versions. It is not approval, and
-      it does not send anything.</p>
+    <p>Every check returns one of three answers, and the third is the point.
+      <strong>Pass</strong> means it was checked and it held. <strong>Fail</strong> means it was
+      checked and it did not. <strong>Cannot verify</strong> means the evidence needed was missing,
+      so nothing is claimed. That last one is drawn unfilled and dashed rather than in a warning
+      colour, because it is not a milder kind of failure. It is the absence of a check, and an
+      interface that draws those two the same way teaches you they are the same thing.</p>
+    <p>So it cannot pass by being agreeable. Two of the ten drafts are clean controls that must come
+      back <strong>send</strong>, which is what stops a checker flagging everything and calling that
+      diligence. One draft has no schedule to compare against and one line with no price source, and
+      the right behaviour there is no scope verdict, no margin and no exposure figure at all. It
+      says what it could not check and what it would need. It does not reach for a market average
+      to fill the hole.</p>
+    <p>The verdict is arithmetic, not prose. Any missing evidence or any high finding holds it; any
+      medium sends it to review; otherwise it passes. No summary, score or button can promote it.
+      And <strong>send</strong> means only that these checks passed against these source versions.
+      It is not approval, and nothing is sent.</p>
     <p class="colophon">Quote Assurance, concept proof. The seven checks and the verdict policy are
       implemented from a written specification and live in engine.js, apart from this page, so they
       can be run and scored without a browser. The fixture matrix is frozen: ten drafts, eight with
       a declared seeded fault, two clean controls. The acceptance run scores catch rate and
-      clean-send rate separately, because a checker that flags everything scores full marks on
-      catches alone. Illustrative electrical rates are synthetic and are not evidence of real
-      pricing. Agent-built, engineer-signed.</p>
+      clean-send rate separately. Illustrative electrical rates are synthetic and are not evidence
+      of real pricing. Agent-built, engineer-signed.</p>
   </section>
 </div>
 
 <p class="vh" id="live" role="status" aria-live="polite"></p>
 
-<script src="engine.js"></script>
+<script>
+/* inlined from engine.js at publish time */
+/* Quote Assurance: the deterministic core.
+ *
+ * Implements the seven checks and the fixed verdict policy from
+ * prd-quote-assurance-demo.md sections 5.3 to 6.1. Kept apart from the
+ * interface on purpose: the checks are the product, the interface only shows
+ * them, and a check that can only be exercised by clicking is a check nobody
+ * can test.
+ *
+ * SYNTHETIC DEMONSTRATION DATA. Not a real client quote, supplier price or
+ * completed job. The rates are plausible, not market truth.
+ */
+
+const POLICY = {
+  policyVersion: "QA-POL-001-V1",
+  maxAgeDays: 90,
+  targetGrossMarginBps: 2200, // 22%
+  evaluationDate: "2026-07-25",
+  // Standard items the contractor puts on every job, per the versioned policy.
+  standards: [
+    { id: "STD-MOB", label: "Mobilisation allowance" },
+    { id: "STD-TEST", label: "Testing and certification" },
+    { id: "STD-OM", label: "O&M manuals" },
+    { id: "STD-ASBUILT", label: "As-built drawings" },
+  ],
+};
+
+/* Price book. ageDays is measured from sourceEffectiveAt to the fixed
+ * evaluation date, so the fixture is stable rather than drifting with today. */
+const PRICE_BOOK = {
+  "PB-LGT-001-V2": { desc: "LED panel 600x600 recessed, supply and fix", unit: "nr", cost: 6540, ageDays: 12 },
+  "PB-LGT-002-V2": { desc: "Emergency luminaire, 3hr maintained, supply and fix", unit: "nr", cost: 8360, ageDays: 12 },
+  "PB-PWR-001-V3": { desc: "Twin switched socket outlet, flush, supply and fix", unit: "nr", cost: 5170, ageDays: 31 },
+  "PB-DAT-001-V2": { desc: "Cat6 data outlet, supply, install and test", unit: "nr", cost: 4410, ageDays: 31 },
+  // Current records, used by the clean baseline.
+  "PB-DIS-001-V2": { desc: "Distribution board, 12 way TP&N, supply and install", unit: "nr", cost: 96800, ageDays: 18 },
+  "PB-CAB-003-V2": { desc: "SWA cable 4mm 3 core, clipped direct", unit: "m", cost: 924, ageDays: 24 },
+  // Superseded records. These exist so a quote can be caught still using them,
+  // and they are deliberately NOT in the baseline: if every quote carried a
+  // stale rate the clean controls could never pass, and a checker that flags
+  // everything scores 100% on catches while being worthless.
+  "PB-DIS-001-V1": { desc: "Distribution board, 12 way TP&N, supply and install", unit: "nr", cost: 94200, ageDays: 80 },
+  "PB-CAB-003-V1": { desc: "SWA cable 4mm 3 core, clipped direct", unit: "m", cost: 851, ageDays: 212 },
+  "PB-CAB-007-V2": { desc: "LSF singles in containment, second fix", unit: "m", cost: 365, ageDays: 24 },
+  "PB-CON-001-V2": { desc: "Cable basket 300mm, supply and install", unit: "m", cost: 1862, ageDays: 24 },
+  "PB-FIR-001-V2": { desc: "Fire alarm detector point, addressable", unit: "nr", cost: 7300, ageDays: 40 },
+  "PB-TST-001-V2": { desc: "Testing, certification and commissioning", unit: "item", cost: 110200, ageDays: 18 },
+  "PB-MOB-001-V2": { desc: "Mobilisation, welfare and site setup", unit: "item", cost: 64600, ageDays: 18 },
+  "PB-OM-001-V2": { desc: "O&M manuals and as-built drawings", unit: "item", cost: 48400, ageDays: 18 },
+};
+
+/* Job schedule. The canonical required scope for this job. */
+const SCHEDULE = {
+  scheduleVersion: "SCH-E-2026-014-V1",
+  floorAreaM2: 1240,
+  poweredPoints: 94,
+  conditionTag: "OCCUPIED_OUT_OF_HOURS",
+  jobClass: "OFFICE_FITOUT",
+  rows: [
+    { id: "SCH-E-001", scope: "LIGHTING", requirement: "86 nr LED panels to open plan and cellular offices" },
+    { id: "SCH-E-002", scope: "EMERGENCY_LIGHTING", requirement: "14 nr emergency luminaires to escape routes, BS 5266" },
+    { id: "SCH-E-003", scope: "SMALL_POWER", requirement: "62 nr twin sockets to desk positions and welfare" },
+    { id: "SCH-E-004", scope: "DATA", requirement: "94 nr Cat6 outlets, tested and certified" },
+    { id: "SCH-E-005", scope: "DISTRIBUTION", requirement: "2 nr 12 way TP&N boards, second floor risers" },
+    { id: "SCH-E-006", scope: "CONTAINMENT", requirement: "225 m cable basket at high level throughout" },
+    { id: "SCH-E-007", scope: "FIRE_ALARM", requirement: "22 nr addressable detector points, BS 5839 L2" },
+    { id: "SCH-E-008", scope: "TEST_CERT", requirement: "Full test, certification and commissioning, BS 7671" },
+  ],
+};
+
+/* Completed comparable jobs, used only for the quantity cohort. */
+const PAST_JOBS = [
+  { id: "JOB-2025-081", jobClass: "OFFICE_FITOUT", conditionTag: "OCCUPIED_OUT_OF_HOURS", floorAreaM2: 1180, poweredPoints: 88, cableM: 812 },
+  { id: "JOB-2025-104", jobClass: "OFFICE_FITOUT", conditionTag: "OCCUPIED_OUT_OF_HOURS", floorAreaM2: 1310, poweredPoints: 101, cableM: 967 },
+  { id: "JOB-2026-006", jobClass: "OFFICE_FITOUT", conditionTag: "OCCUPIED_OUT_OF_HOURS", floorAreaM2: 1225, poweredPoints: 92, cableM: 881 },
+  { id: "JOB-2026-011", jobClass: "OFFICE_FITOUT", conditionTag: "OCCUPIED_OUT_OF_HOURS", floorAreaM2: 1402, poweredPoints: 110, cableM: 1043 },
+  // Deliberately outside the +/-25% floor area band, so it must be excluded.
+  { id: "JOB-2025-039", jobClass: "OFFICE_FITOUT", conditionTag: "VACANT_POSSESSION", floorAreaM2: 420, poweredPoints: 31, cableM: 240 },
+];
+
+/* ---- the base draft ----------------------------------------------------- */
+
+const BASE_LINES = [
+  { id: "L01", scope: "LIGHTING", desc: "LED panel 600x600 recessed", qty: 86, unit: "nr", rateId: "PB-LGT-001-V2" },
+  { id: "L02", scope: "EMERGENCY_LIGHTING", desc: "Emergency luminaire, 3hr maintained", qty: 14, unit: "nr", rateId: "PB-LGT-002-V2" },
+  { id: "L03", scope: "SMALL_POWER", desc: "Twin switched socket outlet, flush", qty: 62, unit: "nr", rateId: "PB-PWR-001-V3" },
+  { id: "L04", scope: "DATA", desc: "Cat6 data outlet, supply, install and test", qty: 94, unit: "nr", rateId: "PB-DAT-001-V2" },
+  { id: "L05", scope: "DISTRIBUTION", desc: "Distribution board, 12 way TP&N", qty: 2, unit: "nr", rateId: "PB-DIS-001-V2" },
+  { id: "L06", scope: "CONTAINMENT", desc: "Cable basket 300mm at high level", qty: 225, unit: "m", rateId: "PB-CON-001-V2" },
+  { id: "L07", scope: "CABLING", desc: "LSF singles in containment, second fix", qty: 890, unit: "m", rateId: "PB-CAB-007-V2" },
+  { id: "L08", scope: "CABLING", desc: "SWA 4mm 3 core sub main", qty: 50, unit: "m", rateId: "PB-CAB-003-V2" },
+  { id: "L09", scope: "FIRE_ALARM", desc: "Fire alarm detector point, addressable", qty: 22, unit: "nr", rateId: "PB-FIR-001-V2" },
+  { id: "L10", scope: "TEST_CERT", desc: "Test, certification and commissioning", qty: 1, unit: "item", rateId: "PB-TST-001-V2", standard: "STD-TEST" },
+  { id: "L11", scope: "PRELIMS", desc: "Mobilisation, welfare and site setup", qty: 1, unit: "item", rateId: "PB-MOB-001-V2", standard: "STD-MOB" },
+  { id: "L12", scope: "HANDOVER", desc: "O&M manuals and as-built drawings", qty: 1, unit: "item", rateId: "PB-OM-001-V2", standard: "STD-OM,STD-ASBUILT" },
+];
+
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function withoutScope(scope) { return BASE_LINES.filter((l) => l.scope !== scope).map(clone); }
+function withoutLine(id) { return BASE_LINES.filter((l) => l.id !== id).map(clone); }
+function patched(id, patch) {
+  return BASE_LINES.map((l) => (l.id === id ? Object.assign(clone(l), patch) : clone(l)));
+}
+
+/* Ten quotes. Each declares its own condition so the scoreboard can score the
+ * checker against what was seeded, rather than against what it found. */
+const QUOTES = [
+  { id: "QA-Q-001", title: "Clean control", condition: "Clean control, one line per scope item",
+    expected: "SEND", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: BASE_LINES.map(clone), exclusions: ["Builders work in connection", "Fire stopping by others"] },
+
+  { id: "QA-Q-002", title: "Missing containment", condition: "Required containment scope absent",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: withoutScope("CONTAINMENT"), exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-003", title: "Stale rate", condition: "SWA priced from a 212 day old price book record",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: patched("L08", { rateId: "PB-CAB-003-V1" }), exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-004", title: "Quantity outlier", condition: "1,800 m cable against 94 points and the cohort median",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: patched("L07", { qty: 1800 }), exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-005", title: "Margin below target", condition: "Direct cost 28,000, sell 32,000, 12.5% against a 22% target",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, sellOverridePence: 3200000, costOverridePence: 2800000,
+    lines: BASE_LINES.map(clone), exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-006", title: "Internal contradiction", condition: "Testing included in scope and excluded in exclusions",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: BASE_LINES.map(clone),
+    exclusions: ["Builders work in connection", "Testing and certification by others"] },
+
+  { id: "QA-Q-007", title: "Missing standard item", condition: "No mobilisation allowance although the policy requires one",
+    expected: "HOLD", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: withoutLine("L11"), exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-008", title: "Nothing to check against", condition: "No schedule reference and one custom item with no rate source",
+    expected: "HOLD", scheduleVersion: null, marginBps: 2400,
+    lines: BASE_LINES.map(clone).concat([
+      { id: "L13", scope: "CUSTOM", desc: "Custom control interface, bespoke", qty: 1, unit: "item", rateId: null, sellPence: 750000 },
+    ]),
+    exclusions: ["Builders work in connection"] },
+
+  { id: "QA-Q-009", title: "Clean control, reordered", condition: "Same complete scope, grouped differently, 23% margin",
+    expected: "SEND", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2300,
+    lines: BASE_LINES.map(clone).reverse(), exclusions: ["Fire stopping by others"] },
+
+  { id: "QA-Q-010", title: "Near stale", condition: "Distribution board rate 80 days old against a 90 day maximum",
+    expected: "REVIEW", scheduleVersion: SCHEDULE.scheduleVersion, marginBps: 2400,
+    lines: patched("L05", { rateId: "PB-DIS-001-V1" }), exclusions: ["Builders work in connection"] },
+];
+
+/* ---- money -------------------------------------------------------------- */
+
+function lineCostPence(line) {
+  if (line.rateId === null) return null;             // unpriceable, on purpose
+  const rate = PRICE_BOOK[line.rateId];
+  if (!rate) return null;
+  return Math.round(rate.cost * line.qty);
+}
+
+function quoteTotals(quote) {
+  let cost = 0;
+  let incomplete = false;
+  const unpriceable = [];
+  for (const l of quote.lines) {
+    const c = lineCostPence(l);
+    if (c === null) { incomplete = true; unpriceable.push(l.id); continue; }
+    cost += c;
+  }
+  if (quote.costOverridePence !== undefined) cost = quote.costOverridePence;
+  const sell = quote.sellOverridePence !== undefined
+    ? quote.sellOverridePence
+    : Math.round(cost / (1 - quote.marginBps / 10000));
+  return { costPence: cost, sellPence: sell, incomplete, unpriceable };
+}
+
+const gbp = (pence) =>
+  "£" + (pence / 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* ---- the seven checks --------------------------------------------------- */
+
+function result(check, status, severity, reasonCode, summary, extra) {
+  return Object.assign(
+    { check, status, severity, reasonCode, summary, evidence: [], affectedLineIds: [], remediation: "" },
+    extra || {}
+  );
+}
+
+function checkScopeCoverage(quote) {
+  if (!quote.scheduleVersion) {
+    return result("SCOPE_COVERAGE", "CANNOT_VERIFY", "CRITICAL", "SCHEDULE_MISSING",
+      "Scope not checked: the draft names no authorised schedule version.", {
+        evidence: ["Quote header: no scheduleVersion"],
+        remediation: "Attach the authorised schedule version this quote was priced against.",
+      });
+  }
+  const covered = new Set(quote.lines.map((l) => l.scope));
+  const missing = SCHEDULE.rows.filter((r) => !covered.has(r.scope));
+  if (missing.length === 0) {
+    return result("SCOPE_COVERAGE", "PASS", "INFO", "SCOPE_COMPLETE",
+      `All ${SCHEDULE.rows.length} required schedule items are covered by a quote line.`, {
+        evidence: SCHEDULE.rows.map((r) => `${r.id} ${r.scope}`),
+      });
+  }
+  return result("SCOPE_COVERAGE", "FAIL", "HIGH", "REQUIRED_SCOPE_MISSING",
+    `${missing.length} required schedule item${missing.length > 1 ? "s are" : " is"} not covered: ` +
+      missing.map((m) => m.scope).join(", ") + ".", {
+      evidence: missing.map((m) => `${m.id} requires ${m.requirement}`),
+      remediation: "Price the missing scope or record an agreed exclusion.",
+    });
+}
+
+function checkRateSourceAge(quote) {
+  const unknown = quote.lines.filter((l) => l.rateId === null || !PRICE_BOOK[l.rateId]);
+  if (unknown.length) {
+    return result("RATE_SOURCE_AGE", "CANNOT_VERIFY", "HIGH", "RATE_SOURCE_UNKNOWN",
+      `${unknown.length} line has no rate source, so its price cannot be verified against the price book.`, {
+        evidence: unknown.map((l) => `${l.id} ${l.desc}: no rateId`),
+        affectedLineIds: unknown.map((l) => l.id),
+        remediation: "Add a price book record for this item, or price it as a provisional sum.",
+      });
+  }
+  const stale = [], near = [];
+  for (const l of quote.lines) {
+    const r = PRICE_BOOK[l.rateId];
+    if (r.ageDays > POLICY.maxAgeDays) stale.push({ l, r });
+    else if (r.ageDays >= 0.8 * POLICY.maxAgeDays) near.push({ l, r });
+  }
+  if (stale.length) {
+    return result("RATE_SOURCE_AGE", "FAIL", "HIGH", "RATE_STALE",
+      `${stale.length} rate is older than the ${POLICY.maxAgeDays} day maximum.`, {
+        evidence: stale.map((s) => `${s.l.rateId} is ${s.r.ageDays} days old at ${POLICY.evaluationDate}`),
+        affectedLineIds: stale.map((s) => s.l.id),
+        calculation: { formula: "ageDays > maxAgeDays", output: `${stale[0].r.ageDays} > ${POLICY.maxAgeDays}` },
+        remediation: "Re-price from a current price book record before sending.",
+      });
+  }
+  if (near.length) {
+    return result("RATE_SOURCE_AGE", "FAIL", "MEDIUM", "RATE_NEAR_STALE",
+      `${near.length} rate is approaching the ${POLICY.maxAgeDays} day maximum.`, {
+        evidence: near.map((s) => `${s.l.rateId} is ${s.r.ageDays} days old, ${Math.round(0.8 * POLICY.maxAgeDays)} is the warning threshold`),
+        affectedLineIds: near.map((s) => s.l.id),
+        remediation: "Confirm the rate still holds, or refresh it.",
+      });
+  }
+  return result("RATE_SOURCE_AGE", "PASS", "INFO", "RATES_CURRENT",
+    `All ${quote.lines.length} rates resolve to a current price book record.`, {
+      evidence: quote.lines.map((l) => `${l.rateId} ${PRICE_BOOK[l.rateId].ageDays}d`),
+    });
+}
+
+function cohort() {
+  return PAST_JOBS.filter(
+    (j) =>
+      j.jobClass === SCHEDULE.jobClass &&
+      j.conditionTag === SCHEDULE.conditionTag &&
+      Math.abs(j.floorAreaM2 - SCHEDULE.floorAreaM2) <= 0.25 * SCHEDULE.floorAreaM2
+  );
+}
+
+function checkQuantityOutlier(quote) {
+  const pool = cohort();
+  const cableLines = quote.lines.filter((l) => l.scope === "CABLING" && l.unit === "m");
+  if (pool.length < 3) {
+    return result("QUANTITY_OUTLIER", "CANNOT_VERIFY", "HIGH", "INSUFFICIENT_COMPARABLES",
+      `Only ${pool.length} comparable job${pool.length === 1 ? "" : "s"} available; three are required.`, {
+        remediation: "Widen the cohort or accept that this quantity is unchecked.",
+      });
+  }
+  if (!cableLines.length) {
+    return result("QUANTITY_OUTLIER", "CANNOT_VERIFY", "HIGH", "MISSING_NORMALISATION_DRIVER",
+      "No cable quantity present to normalise against the cohort.", {});
+  }
+  const ratios = pool.map((j) => j.cableM / j.poweredPoints).sort((a, b) => a - b);
+  const mid = Math.floor(ratios.length / 2);
+  const median = ratios.length % 2 ? ratios[mid] : (ratios[mid - 1] + ratios[mid]) / 2;
+  const qty = cableLines.reduce((n, l) => n + l.qty, 0);
+  const norm = qty / SCHEDULE.poweredPoints;
+  const ratio = norm / median;
+  const calc = {
+    formula: "ratio = (quote cable m / powered points) / cohort median",
+    output: `(${qty} / ${SCHEDULE.poweredPoints}) / ${median.toFixed(2)} = ${ratio.toFixed(2)}`,
+  };
+  const ev = pool.map((j) => `${j.id}: ${j.cableM} m over ${j.poweredPoints} points = ${(j.cableM / j.poweredPoints).toFixed(2)}`);
+  if (ratio < 0.65 || ratio > 1.35) {
+    return result("QUANTITY_OUTLIER", "FAIL", "HIGH", "QUANTITY_OUTLIER",
+      `Cable quantity is ${ratio.toFixed(2)}x the cohort median, outside the 0.65 to 1.35 band.`, {
+        evidence: ev, calculation: calc, affectedLineIds: cableLines.map((l) => l.id),
+        remediation: "Re-check the takeoff. A transposed figure is the usual cause.",
+      });
+  }
+  if (ratio < 0.8 || ratio > 1.2) {
+    return result("QUANTITY_OUTLIER", "FAIL", "MEDIUM", "QUANTITY_WARNING",
+      `Cable quantity is ${ratio.toFixed(2)}x the cohort median.`, { evidence: ev, calculation: calc,
+        affectedLineIds: cableLines.map((l) => l.id) });
+  }
+  return result("QUANTITY_OUTLIER", "PASS", "INFO", "QUANTITY_WITHIN_RANGE",
+    `Cable quantity is ${ratio.toFixed(2)}x the median of ${pool.length} comparable jobs.`, {
+      evidence: ev, calculation: calc,
+    });
+}
+
+function checkMargin(quote) {
+  const t = quoteTotals(quote);
+  if (t.incomplete && quote.costOverridePence === undefined) {
+    return result("MARGIN", "CANNOT_VERIFY", "HIGH", "MARGIN_INPUT_INCOMPLETE",
+      "Margin not calculated: at least one line has no direct cost, so the cost base is incomplete.", {
+        evidence: t.unpriceable.map((id) => `${id} has no priceable direct cost`),
+        affectedLineIds: t.unpriceable,
+        remediation: "Price the outstanding line, or mark it as a provisional sum with an agreed value.",
+      });
+  }
+  const marginBps = Math.round(((t.sellPence - t.costPence) / t.sellPence) * 10000);
+  const calc = {
+    formula: "(sell excluding VAT - direct cost) / sell excluding VAT",
+    output: `(${gbp(t.sellPence)} - ${gbp(t.costPence)}) / ${gbp(t.sellPence)} = ${(marginBps / 100).toFixed(1)}%`,
+  };
+  if (marginBps < POLICY.targetGrossMarginBps) {
+    return result("MARGIN", "FAIL", "HIGH", "MARGIN_BELOW_TARGET",
+      `Gross margin is ${(marginBps / 100).toFixed(1)}%, below the ${(POLICY.targetGrossMarginBps / 100).toFixed(0)}% target.`, {
+        calculation: calc, evidence: [`${POLICY.policyVersion} target ${(POLICY.targetGrossMarginBps / 100).toFixed(0)}%`],
+        remediation: "Recover cost or re-price before sending.",
+      });
+  }
+  return result("MARGIN", "PASS", "INFO", "MARGIN_AT_OR_ABOVE_TARGET",
+    `Gross margin is ${(marginBps / 100).toFixed(1)}%, at or above the ${(POLICY.targetGrossMarginBps / 100).toFixed(0)}% target.`, {
+      calculation: calc,
+    });
+}
+
+function checkStandardItems(quote) {
+  const present = new Set();
+  for (const l of quote.lines) if (l.standard) l.standard.split(",").forEach((s) => present.add(s));
+  const missing = POLICY.standards.filter((s) => !present.has(s.id));
+  if (missing.length === 0) {
+    return result("STANDARD_ITEMS", "PASS", "INFO", "STANDARD_ITEMS_COMPLETE",
+      `All ${POLICY.standards.length} standard items required by ${POLICY.policyVersion} are present.`, {
+        evidence: POLICY.standards.map((s) => `${s.id} ${s.label}`),
+      });
+  }
+  return result("STANDARD_ITEMS", "FAIL", "HIGH", "STANDARD_ITEM_MISSING",
+    `${missing.length} standard item${missing.length > 1 ? "s are" : " is"} missing: ` +
+      missing.map((m) => m.label).join(", ") + ".", {
+      evidence: missing.map((m) => `${POLICY.policyVersion} requires ${m.id} ${m.label}`),
+      remediation: "Add the standard item or record an authorised policy exception.",
+    });
+}
+
+const EXCLUSION_SCOPE = {
+  "testing and certification": "TEST_CERT",
+  containment: "CONTAINMENT",
+  "fire alarm": "FIRE_ALARM",
+};
+
+function checkContradiction(quote) {
+  const included = new Set(quote.lines.map((l) => l.scope));
+  const clashes = [];
+  for (const ex of quote.exclusions) {
+    const key = Object.keys(EXCLUSION_SCOPE).find((k) => ex.toLowerCase().includes(k));
+    if (!key) continue;                       // unmapped prose is not forced into a code
+    const scope = EXCLUSION_SCOPE[key];
+    if (included.has(scope)) {
+      const line = quote.lines.find((l) => l.scope === scope);
+      clashes.push({ scope, ex, line });
+    }
+  }
+  if (!clashes.length) {
+    return result("CONTRADICTION", "PASS", "INFO", "NO_INTERNAL_CONTRADICTIONS",
+      "No scope appears as both included and excluded.", {
+        evidence: quote.exclusions.map((e) => `Exclusion: ${e}`),
+      });
+  }
+  return result("CONTRADICTION", "FAIL", "CRITICAL", "SCOPE_INCLUDED_AND_EXCLUDED",
+    `${clashes[0].scope} is both priced and excluded in the same quote.`, {
+      evidence: clashes.flatMap((c) => [`Included: ${c.line.id} ${c.line.desc}`, `Excluded: "${c.ex}"`]),
+      affectedLineIds: clashes.map((c) => c.line.id),
+      remediation: "Decide which is correct. The client will read the exclusion.",
+    });
+}
+
+function checkDownsideExposure(quote, others) {
+  const parts = [];
+  const unquantified = [];
+
+  const scope = others.find((r) => r.check === "SCOPE_COVERAGE");
+  if (scope.reasonCode === "REQUIRED_SCOPE_MISSING") {
+    const missing = SCHEDULE.rows.filter((r) => !new Set(quote.lines.map((l) => l.scope)).has(r.scope));
+    for (const m of missing) {
+      const base = BASE_LINES.find((l) => l.scope === m.scope);
+      if (base) {
+        const c = lineCostPence(base);
+        if (c !== null) parts.push({ label: `${m.scope} at ${base.qty} ${base.unit}`, pence: c });
+        else unquantified.push(`${m.scope}: no current rate`);
+      } else unquantified.push(`${m.scope}: no assembly to price from`);
+    }
+  }
+  if (scope.status === "CANNOT_VERIFY") unquantified.push("Scope gap unknown: no schedule to compare against");
+
+  const rate = others.find((r) => r.check === "RATE_SOURCE_AGE");
+  if (rate.reasonCode === "RATE_SOURCE_UNKNOWN") unquantified.push("Unpriced line: no current rate to compare against");
+
+  const margin = others.find((r) => r.check === "MARGIN");
+  if (margin.reasonCode === "MARGIN_BELOW_TARGET") {
+    const t = quoteTotals(quote);
+    const needed = Math.round(t.costPence / (1 - POLICY.targetGrossMarginBps / 10000));
+    parts.push({ label: "Margin shortfall to target", pence: needed - t.sellPence });
+  }
+  if (margin.status === "CANNOT_VERIFY") unquantified.push("Margin shortfall unknown: direct cost incomplete");
+
+  const qty = others.find((r) => r.check === "QUANTITY_OUTLIER");
+  if (qty.reasonCode === "QUANTITY_OUTLIER") unquantified.push("Quantity outlier: over-measure is competitive, not contractual, exposure");
+
+  const total = parts.reduce((n, p) => n + p.pence, 0);
+
+  if (!parts.length && unquantified.length) {
+    return result("DOWNSIDE_EXPOSURE", "CANNOT_VERIFY", "HIGH", "EXPOSURE_UNQUANTIFIED",
+      "Exposure not quantified: a required monetary input is unavailable.", {
+        evidence: unquantified,
+        remediation: "Supply the missing source. No market average is substituted.",
+      });
+  }
+  if (!parts.length) {
+    return result("DOWNSIDE_EXPOSURE", "PASS", "INFO", "EXPOSURE_NONE_IDENTIFIED",
+      "No quantifiable downside identified from the checks above.", {});
+  }
+  return result("DOWNSIDE_EXPOSURE", unquantified.length ? "CANNOT_VERIFY" : "FAIL",
+    unquantified.length ? "HIGH" : "MEDIUM",
+    unquantified.length ? "EXPOSURE_PARTLY_QUANTIFIED" : "EXPOSURE_QUANTIFIED",
+    `${gbp(total)} of downside is quantifiable from the findings above.` +
+      (unquantified.length ? " Some exposure could not be quantified." : ""), {
+      evidence: parts.map((p) => `${p.label}: ${gbp(p.pence)}`).concat(unquantified),
+      calculation: { formula: "sum of non overlapping scenario amounts", output: gbp(total) },
+      remediation: "Synthetic fixture scenario, not a forecast.",
+    });
+}
+
+/* ---- verdict ------------------------------------------------------------ */
+
+function verdictFor(results) {
+  const anyCannot = results.some((r) => r.status === "CANNOT_VERIFY");
+  const anyHigh = results.some((r) => r.severity === "HIGH" || r.severity === "CRITICAL");
+  if (anyCannot || anyHigh) return "HOLD";
+  if (results.some((r) => r.severity === "MEDIUM")) return "REVIEW";
+  return "SEND";
+}
+
+function runAssurance(quote) {
+  const first = [
+    checkScopeCoverage(quote),
+    checkRateSourceAge(quote),
+    checkQuantityOutlier(quote),
+    checkMargin(quote),
+    checkStandardItems(quote),
+    checkContradiction(quote),
+  ];
+  const results = first.concat([checkDownsideExposure(quote, first)]);
+  return {
+    quoteId: quote.id,
+    verdict: verdictFor(results),
+    results,
+    totals: quoteTotals(quote),
+    policyVersion: POLICY.policyVersion,
+    scheduleVersion: quote.scheduleVersion,
+  };
+}
+
+/* One surface, two consumers: node runs the acceptance script against it, the
+ * page renders it. The checks are identical in both, which is the point of
+ * keeping them out of the interface. */
+const API = { POLICY, PRICE_BOOK, SCHEDULE, PAST_JOBS, QUOTES, BASE_LINES,
+  runAssurance, quoteTotals, verdictFor, gbp, cohort, lineCostPence };
+
+if (typeof module !== "undefined" && module.exports) module.exports = API;
+if (typeof window !== "undefined") window.QA = API;
+
+</script>
 <script>
 (function () {
   "use strict";
@@ -207,125 +731,135 @@ tr:last-child td{border-bottom:0}
   var esc = function (s) { return String(s == null ? "" : s)
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
 
-  var current = null;   // a working copy, so edits never mutate the frozen fixture
-  var openCheck = null;
-  var highlight = { lines: [], kind: "" };
+  var NAMES = {
+    SCOPE_COVERAGE: "Scope coverage", RATE_SOURCE_AGE: "Rate source and age",
+    QUANTITY_OUTLIER: "Quantity against past jobs", MARGIN: "Margin",
+    STANDARD_ITEMS: "Standard items", CONTRADICTION: "Internal contradiction",
+    DOWNSIDE_EXPOSURE: "Downside exposure",
+  };
+
+  var current = null, open = null;
 
   function load(fixture) {
     current = JSON.parse(JSON.stringify(fixture));
     current.lines.forEach(function (l) { l.on = true; });
-    openCheck = null; highlight = { lines: [], kind: "" };
+    open = null;
     render();
   }
 
-  function activeQuote() {
+  function active() {
     var q = JSON.parse(JSON.stringify(current));
     q.lines = q.lines.filter(function (l) { return l.on !== false; });
     return q;
   }
 
   function render() {
-    var q = activeQuote();
-    var run = E.runAssurance(q);
-    renderVerdict(run, q);
-    renderDoc(run);
-    renderResults(run);
+    var run = E.runAssurance(active());
+    // Number the adverse findings so the document gutter and the notes agree.
+    var marks = {};
+    var n = 0;
+    run.results.forEach(function (r) {
+      if (r.status === "PASS") return;
+      n++;
+      r._n = n;
+      (r.affectedLineIds || []).forEach(function (id) {
+        if (!marks[id]) marks[id] = { n: n, kind: r.status };
+      });
+    });
+    renderStamp(run);
+    renderSheet(run, marks);
+    renderNotes(run);
     renderScore();
   }
 
-  function renderVerdict(run, q) {
-    var why = { SEND: "Every check passed on the supplied source versions. This is not approval, and nothing has been sent.",
-                REVIEW: "Nothing failed outright, but at least one finding is worth a look before sending.",
-                HOLD: "Something failed, or something could not be checked at all." }[run.verdict];
-    el("verdict").innerHTML =
-      '<span class="verdict__badge v-' + run.verdict + '">' + run.verdict + '</span>' +
-      '<span class="verdict__why">' + esc(why) + '</span>' +
-      '<span class="verdict__meta">' +
-        "policy " + esc(E.POLICY.policyVersion) + "<br>" +
-        "schedule " + esc(run.scheduleVersion || "none supplied") + "<br>" +
-        "evaluated " + esc(E.POLICY.evaluationDate) +
-      "</span>";
+  function renderStamp(run) {
+    var sub = { SEND: "checks passed", REVIEW: "look before sending", HOLD: "do not send" }[run.verdict];
+    el("stamp").className = "stamp s-" + run.verdict;
+    el("stamp").innerHTML = esc(run.verdict) + "<small>" + esc(sub) + "</small>";
   }
 
-  function renderDoc(run) {
+  function renderSheet(run, marks) {
+    el("sheetTitle").textContent = current.title;
+    el("sheetRef").innerHTML =
+      "Ref <b>" + esc(current.id) + "</b><br>" +
+      "Schedule <b>" + esc(current.scheduleVersion || "none supplied") + "</b><br>" +
+      "Condition <b>" + esc(current.condition) + "</b>";
+
     var rows = current.lines.map(function (l) {
+      var m = l.on === false ? null : marks[l.id];
       var cls = [];
-      if (l.on === false) cls.push("line--off");
-      if (highlight.lines.indexOf(l.id) !== -1)
-        cls.push(highlight.kind === "CANNOT_VERIFY" ? "line--unverified" : "line--flagged");
+      if (l.on === false) cls.push("off");
+      else if (m) cls.push(m.kind === "CANNOT_VERIFY" ? "unmarked" : "marked");
       var cost = l.on === false ? null : E.lineCostPence(l);
       return '<tr class="' + cls.join(" ") + '">' +
-        "<td>" + esc(l.id) + "</td>" +
-        '<td class="desc">' + esc(l.desc) +
-          '<br><span style="color:var(--faint);font-size:10px">' + esc(l.rateId || "no rate source") + "</span></td>" +
+        '<td class="gut">' + (m ? m.n : "") + "</td>" +
+        '<td class="ref">' + esc(l.id) + "</td>" +
+        '<td><span class="desc">' + esc(l.desc) + '</span><span class="src">' +
+          esc(l.rateId || "no price book record") + "</span></td>" +
         '<td class="num"><input class="qty" type="number" min="0" step="1" value="' + l.qty +
-          '" data-line="' + esc(l.id) + '" aria-label="Quantity for ' + esc(l.desc) + '"></td>' +
-        "<td>" + esc(l.unit) + "</td>" +
-        '<td class="num">' + (cost === null ? "&mdash;" : E.gbp(cost)) + "</td>" +
-        '<td><button class="drop" data-drop="' + esc(l.id) + '" aria-label="' +
-          (l.on === false ? "Restore" : "Drop") + " " + esc(l.desc) + '">' +
-          (l.on === false ? "add" : "del") + "</button></td></tr>";
+          '" data-line="' + esc(l.id) + '" aria-label="Quantity, ' + esc(l.desc) + '"></td>' +
+        '<td class="ref">' + esc(l.unit) + "</td>" +
+        '<td class="num">' + (cost === null ? "&mdash;" : esc(E.gbp(cost))) + "</td>" +
+        '<td class="num pad-r"><button class="drop" data-drop="' + esc(l.id) + '" aria-label="' +
+          (l.on === false ? "Restore " : "Remove ") + esc(l.desc) + '">' +
+          (l.on === false ? "+" : "×") + "</button></td></tr>";
     }).join("");
 
     el("doc").innerHTML =
-      "<table><thead><tr><th>Ref</th><th>Description</th><th>Qty</th><th>Unit</th>" +
-      "<th>Direct cost</th><th></th></tr></thead><tbody>" + rows + "</tbody></table>" +
-      '<div class="totals"><span>Direct cost ' + E.gbp(run.totals.costPence) + "</span>" +
-      "<span>Sell excluding VAT " + E.gbp(run.totals.sellPence) + "</span></div>" +
-      '<div class="excl"><b>Exclusions</b>' +
-      current.exclusions.map(function (x) { return esc(x); }).join("<br>") + "</div>";
+      "<table><thead><tr><th class=\"gut\"></th><th>Ref</th><th>Description</th>" +
+      "<th class=\"num\">Qty</th><th>Unit</th><th class=\"num\">Direct cost</th>" +
+      "<th class=\"pad-r\"></th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      '<div class="sheet__foot">' +
+        '<span class="tot">Direct cost<b>' + esc(E.gbp(run.totals.costPence)) + "</b></span>" +
+        '<span class="tot">Sell excluding VAT<b>' + esc(E.gbp(run.totals.sellPence)) + "</b></span>" +
+        '<span class="tot">Lines<b>' + current.lines.filter(function (l) { return l.on !== false; }).length + "</b></span>" +
+      "</div>" +
+      '<div class="excl"><span class="micro">Exclusions</span><br><i>' +
+        current.exclusions.map(esc).join("<br>") + "</i></div>";
 
-    Array.prototype.forEach.call(el("doc").querySelectorAll(".qty"), function (input) {
-      input.addEventListener("change", function () {
-        var line = current.lines.find(function (l) { return l.id === input.dataset.line; });
-        var v = parseInt(input.value, 10);
-        line.qty = isNaN(v) || v < 0 ? 0 : v;
-        announce("Quantity changed. Re-checked.");
-        render();
+    Array.prototype.forEach.call(el("doc").querySelectorAll(".qty"), function (i) {
+      i.addEventListener("change", function () {
+        var l = current.lines.find(function (x) { return x.id === i.dataset.line; });
+        var v = parseInt(i.value, 10);
+        l.qty = isNaN(v) || v < 0 ? 0 : v;
+        say("Quantity changed, re-checked"); render();
       });
     });
     Array.prototype.forEach.call(el("doc").querySelectorAll(".drop"), function (b) {
       b.addEventListener("click", function () {
-        var line = current.lines.find(function (l) { return l.id === b.dataset.drop; });
-        line.on = line.on === false;
-        announce(line.on === false ? "Line dropped. Re-checked." : "Line restored. Re-checked.");
+        var l = current.lines.find(function (x) { return x.id === b.dataset.drop; });
+        l.on = l.on === false;
+        say(l.on === false ? "Line removed, re-checked" : "Line restored, re-checked");
         render();
       });
     });
   }
 
-  var CHECK_NAMES = {
-    SCOPE_COVERAGE: "Scope coverage", RATE_SOURCE_AGE: "Rate source and age",
-    QUANTITY_OUTLIER: "Quantity outlier", MARGIN: "Margin",
-    STANDARD_ITEMS: "Standard items", CONTRADICTION: "Internal contradiction",
-    DOWNSIDE_EXPOSURE: "Downside exposure",
-  };
-
-  function renderResults(run) {
-    el("results").innerHTML = run.results.map(function (r) {
-      var open = openCheck === r.check;
-      return '<div class="res' + (open ? " open" : "") + '">' +
-        '<button class="res__top" data-check="' + r.check + '" aria-expanded="' + open + '">' +
-          '<span class="tag t-' + r.status + '">' + r.status.replace("_", " ") + "</span>" +
-          '<span><span class="res__name">' + esc(CHECK_NAMES[r.check]) + "</span>" +
-          '<span class="res__sum">' + esc(r.summary) + "</span></span>" +
+  function renderNotes(run) {
+    el("notes").innerHTML = run.results.map(function (r) {
+      var mod = r.status === "PASS" ? "note--pass" : r.status === "CANNOT_VERIFY" ? "note--cannot" : "";
+      var isOpen = open === r.check;
+      return '<div class="note ' + mod + (isOpen ? " open" : "") + '">' +
+        '<div class="note__n">' + (r._n ? r._n : "✓") + "</div><div>" +
+        '<button class="note__hd" data-c="' + r.check + '" aria-expanded="' + isOpen + '">' +
+          '<span class="note__name">' + esc(NAMES[r.check]) + "</span>" +
+          '<span class="chip c-' + r.status + '">' + esc(r.status.replace("_", " ")) + "</span>" +
         "</button>" +
-        '<div class="res__body">' +
-          (r.calculation ? "<h4>Calculation</h4><div class=\"calc\">" +
-            esc(r.calculation.formula) + "\n" + esc(r.calculation.output) + "</div>" : "") +
+        '<p class="note__sum">' + esc(r.summary) + "</p>" +
+        '<div class="note__body">' +
+          (r.calculation ? "<h4>Working</h4><div class=\"calc\">" + esc(r.calculation.formula) +
+            "\n" + esc(r.calculation.output) + "</div>" : "") +
           (r.evidence && r.evidence.length ? "<h4>Evidence</h4><ul class=\"ev\">" +
             r.evidence.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>" : "") +
-          (r.remediation ? '<h4>What to do</h4><p class="rem">' + esc(r.remediation) + "</p>" : "") +
+          (r.remediation ? "<h4>What to do</h4><p class=\"rem\">" + esc(r.remediation) + "</p>" : "") +
           "<h4>Reason code</h4><div class=\"calc\">" + esc(r.reasonCode) + "</div>" +
-        "</div></div>";
+        "</div></div></div>";
     }).join("");
 
-    Array.prototype.forEach.call(el("results").querySelectorAll(".res__top"), function (b) {
+    Array.prototype.forEach.call(el("notes").querySelectorAll(".note__hd"), function (b) {
       b.addEventListener("click", function () {
-        var r = run.results.find(function (x) { return x.check === b.dataset.check; });
-        openCheck = openCheck === r.check ? null : r.check;
-        highlight = openCheck ? { lines: r.affectedLineIds || [], kind: r.status } : { lines: [], kind: "" };
-        renderDoc(run); renderResults(run);
+        open = open === b.dataset.c ? null : b.dataset.c;
+        renderNotes(run);
       });
     });
   }
@@ -336,35 +870,30 @@ tr:last-child td{border-bottom:0}
     var caught = seeded.filter(function (q) { return E.runAssurance(q).verdict !== "SEND"; }).length;
     var sent = clean.filter(function (q) { return E.runAssurance(q).verdict === "SEND"; }).length;
     var exact = E.QUOTES.filter(function (q) { return E.runAssurance(q).verdict === q.expected; }).length;
-    var cells = [
-      [caught + "/" + seeded.length, "seeded faults caught"],
-      [sent + "/" + clean.length, "clean drafts correctly sent"],
-      [exact + "/" + E.QUOTES.length, "verdicts matching the frozen matrix"],
-      ["7", "checks per draft, every one reported"],
-    ];
-    el("score").innerHTML = cells.map(function (c) {
-      return '<div class="score__cell"><span class="score__n">' + c[0] +
-        '</span><span class="score__l">' + c[1] + "</span></div>";
+    el("score").innerHTML = [
+      [caught + " of " + seeded.length, "seeded faults caught"],
+      [sent + " of " + clean.length, "clean drafts correctly sent"],
+      [exact + " of " + E.QUOTES.length, "verdicts matching the frozen matrix"],
+    ].map(function (c) {
+      return '<div><span class="score__n">' + c[0] + '</span><span class="score__l">' + c[1] + "</span></div>";
     }).join("");
-    el("scoreNote").textContent =
-      "Catch rate and clean-send rate are scored separately on purpose. A checker that flags " +
-      "everything scores full marks on catches and is worthless, which is what the two clean " +
-      "controls exist to prevent.";
   }
 
-  function announce(m) { el("live").textContent = m; }
+  function say(m) { el("live").textContent = m; }
+
+  el("mPolicy").textContent = E.POLICY.policyVersion;
+  el("mDate").textContent = E.POLICY.evaluationDate;
 
   E.QUOTES.forEach(function (q, i) {
     var b = document.createElement("button");
     b.type = "button"; b.className = "fx";
     b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
-    b.innerHTML = "<span>" + esc(q.title) + "</span><small>" + esc(q.id) + "</small>";
+    b.innerHTML = esc(q.title) + "<span>" + esc(q.id) + "</span>";
     b.addEventListener("click", function () {
       Array.prototype.forEach.call(el("fixtures").children, function (n) {
         n.setAttribute("aria-pressed", "false"); });
       b.setAttribute("aria-pressed", "true");
-      load(q);
-      announce("Loaded " + q.title);
+      load(q); say("Loaded " + q.title);
     });
     el("fixtures").appendChild(b);
   });
