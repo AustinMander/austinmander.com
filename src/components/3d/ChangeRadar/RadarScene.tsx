@@ -120,7 +120,7 @@ function RiskBlip({ position, color, secondaryColor, delay }: { position: [numbe
     const meshRef = useRef<THREE.Mesh>(null);
     const [visible, setVisible] = (useMemo(() => {
         let v = false;
-        let t = 0;
+        const t = 0;
         return [v, (val: boolean) => { v = val; }]; // Mock state hook for loop, actually we use useFrame refs
     }, []));
 

@@ -28,7 +28,7 @@ export default function PrivacyPage() {
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
                   <p className="text-muted-foreground mb-4">
-                    Austin Mander ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website austinmander.com or engage with our consulting services.
+                    Austin Mander (“we,” “our,” or “us”) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website austinmander.com or engage with our consulting services.
                   </p>
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">2. Information We Collect</h2>
@@ -135,14 +135,14 @@ export default function PrivacyPage() {
                     Your information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place to protect your information in accordance with this policy.
                   </p>
 
-                  <h2 className="text-2xl font-semibold mt-8 mb-4">11. Children's Privacy</h2>
+                  <h2 className="text-2xl font-semibold mt-8 mb-4">11. Children’s Privacy</h2>
                   <p className="text-muted-foreground mb-4">
                     Our services are not directed to individuals under 18 years of age. We do not knowingly collect personal information from children.
                   </p>
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">12. Updates to This Policy</h2>
                   <p className="text-muted-foreground mb-4">
-                    We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last Updated" date.
+                    We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the “Last Updated” date.
                   </p>
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">13. Contact Us</h2>
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">14. Supervisory Authority</h2>
                   <p className="text-muted-foreground">
-                    If you are located in the UK, you have the right to lodge a complaint with the Information Commissioner's Office (ICO) at <a href="https://ico.org.uk" className="text-teal hover:underline">ico.org.uk</a>.
+                    If you are located in the UK, you have the right to lodge a complaint with the Information Commissioner’s Office (ICO) at <a href="https://ico.org.uk" className="text-teal hover:underline">ico.org.uk</a>.
                   </p>
                 </div>
               </Card>

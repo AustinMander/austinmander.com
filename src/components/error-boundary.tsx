@@ -74,7 +74,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </h2>
             <p className="text-sm text-red-600 dark:text-red-300 mb-4">
-              We apologize for the inconvenience. The error has been logged and we'll look into it.
+              We apologize for the inconvenience. The error has been logged and we’ll look into it.
             </p>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-4">

@@ -83,9 +83,9 @@ export interface CTARecommendation {
 }
 
 // In-memory storage for development (replace with database in production)
-let ctaTests: CTATest[] = [];
-let userSessions: Map<string, UserContext> = new Map();
-let ctaInteractions: Array<{
+const ctaTests: CTATest[] = [];
+const userSessions: Map<string, UserContext> = new Map();
+const ctaInteractions: Array<{
   sessionId: string;
   testId?: string;
   variantId?: string;
@@ -189,7 +189,7 @@ export function getCTARecommendation(
 
   let ctaType: CTARecommendation['ctaType'] = 'newsletter';
   let confidence = 0.5;
-  let reasoning: string[] = [];
+  const reasoning: string[] = [];
   let timing: CTARecommendation['timing'] = 'immediate';
 
   // High-intent user detection

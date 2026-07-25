@@ -448,7 +448,7 @@ export function BookingWidget({
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
               <strong>Next steps:</strong> Select your preferred time in the Calendly window, 
-              and I'll send you preparation materials 24 hours before our call.
+              and I’ll send you preparation materials 24 hours before our call.
             </p>
           </div>
 

@@ -207,7 +207,7 @@ export function EmailCapture({
             </div>
             <div>
               <h4 className="font-semibold text-green-700 mb-1">
-                You're all set!
+                You’re all set!
               </h4>
               <p className="text-sm text-muted-foreground">
                 Check your email for your first transformation intelligence insight.

@@ -28,7 +28,7 @@ export default function TermsPage() {
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">1. Agreement to Terms</h2>
                   <p className="text-muted-foreground mb-4">
-                    By accessing or using the services provided by Austin Mander ("we," "our," or "us") through austinmander.com or engaging our consulting services, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of these terms, you may not access our services.
+                    By accessing or using the services provided by Austin Mander (“we,” “our,” or “us”) through austinmander.com or engaging our consulting services, you agree to be bound by these Terms of Service (“Terms”). If you disagree with any part of these terms, you may not access our services.
                   </p>
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">2. Description of Services</h2>
@@ -85,7 +85,7 @@ export default function TermsPage() {
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">6. Disclaimers and Warranties</h2>
                   <p className="text-muted-foreground mb-4">
-                    Our services are provided "as is" without any warranties, express or implied. We do not guarantee:
+                    Our services are provided “as is” without any warranties, express or implied. We do not guarantee:
                   </p>
                   <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
                     <li>Specific business outcomes or results</li>

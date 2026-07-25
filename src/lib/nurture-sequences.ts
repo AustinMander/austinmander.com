@@ -26,7 +26,7 @@ export interface NurtureSubscription {
 }
 
 // In-memory storage for development (replace with database in production)
-let nurtureSubscriptions: NurtureSubscription[] = [];
+const nurtureSubscriptions: NurtureSubscription[] = [];
 
 // Email sequence schedules (days from start)
 const SEQUENCE_SCHEDULES = {

@@ -41,8 +41,8 @@ export interface UserSession {
 }
 
 // In-memory storage for development (replace with database/analytics service in production)
-let userSessions: Map<string, UserSession> = new Map();
-let behaviorEvents: BehaviorEvent[] = [];
+const userSessions: Map<string, UserSession> = new Map();
+const behaviorEvents: BehaviorEvent[] = [];
 
 /**
  * Initialize user session tracking
@@ -348,7 +348,7 @@ export function getSessionAnalytics(sessionId: string): {
   // Generate recommendations
   let nextAction = 'Continue browsing';
   let confidence = 0.5;
-  let reasoning: string[] = [];
+  const reasoning: string[] = [];
 
   if (leadScore >= 70) {
     nextAction = 'QuickWin consultation booking';

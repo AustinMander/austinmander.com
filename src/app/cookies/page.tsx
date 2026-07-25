@@ -115,7 +115,7 @@ export default function CookiesPage() {
                   
                   <h3 className="text-xl font-semibold mt-6 mb-3">Cookie Preferences</h3>
                   <p className="text-muted-foreground mb-4">
-                    You can manage your cookie preferences at any time by clicking the "Cookie Settings" button at the bottom of any page on our website.
+                    You can manage your cookie preferences at any time by clicking the “Cookie Settings” button at the bottom of any page on our website.
                   </p>
                   
                   <h3 className="text-xl font-semibold mt-6 mb-3">Browser Settings</h3>
@@ -151,7 +151,7 @@ export default function CookiesPage() {
 
                   <h2 className="text-2xl font-semibold mt-8 mb-4">7. Cookie Duration</h2>
                   <p className="text-muted-foreground mb-4">
-                    Cookies can be either "session" or "persistent" cookies:
+                    Cookies can be either “session” or “persistent” cookies:
                   </p>
                   <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4">
                     <li><strong>Session cookies:</strong> Deleted when you close your browser</li>
