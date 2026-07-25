@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quote Assurance</title>
+<meta name="description" content="A pre-send checker for a commercial electrical quote. It shows the evidence behind every result and refuses to bless anything it cannot verify.">
+<meta name="theme-color" content="#f2f1ed">
+<style>
+:root{
+  --paper:#f2f1ed; --card:#fbfaf8; --sunk:#e8e7e1;
+  --line:#d3d1c8; --line-soft:#e2e0d8;
+  --ink:#16181c; --muted:#4d5058; --faint:#7b7e86;
+  --madder:#a83a24; --madder-soft:#f6e6e1;
+  --amber:#9a6a10; --amber-soft:#f8efdc;
+  --pass:#2f5d45; --pass-soft:#e7efe9;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:georgia,"Times New Roman",serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.shell{max-width:1340px;margin:0 auto;padding:clamp(20px,4vw,52px)}
+h1{font-family:var(--serif);font-size:clamp(28px,4.5vw,44px);font-weight:600;margin:0 0 10px;letter-spacing:-.01em}
+.lede{margin:0;max-width:60ch;color:var(--muted);font-size:14px}
+.lede b{color:var(--ink);font-weight:500}
+.synthetic{display:inline-block;margin-top:14px;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--madder);border:1px solid var(--madder);padding:5px 9px}
+.legend{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+
+/* Fixture picker */
+.fixtures{display:flex;flex-wrap:wrap;gap:6px;margin:26px 0 0}
+.fx{font-family:var(--mono);font-size:11px;background:var(--card);color:var(--ink);
+  border:1px solid var(--line);padding:9px 11px;cursor:pointer;text-align:left;min-height:44px}
+.fx:hover{border-color:var(--muted)}
+.fx:focus-visible{outline:2px solid var(--madder);outline-offset:2px}
+.fx[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.fx small{display:block;color:var(--faint);font-size:10px;margin-top:2px}
+.fx[aria-pressed="true"] small{color:#b9bcc4}
+
+/* Verdict */
+.verdict{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;margin:24px 0 0;
+  padding:16px 18px;border:1px solid var(--line);background:var(--card)}
+.verdict__badge{font-family:var(--serif);font-size:26px;font-weight:600;padding:4px 16px;border:2px solid}
+.v-SEND{color:var(--pass);border-color:var(--pass);background:var(--pass-soft)}
+.v-REVIEW{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
+.v-HOLD{color:var(--madder);border-color:var(--madder);background:var(--madder-soft)}
+.verdict__why{font-size:12px;color:var(--muted);max-width:56ch}
+.verdict__meta{margin-left:auto;font-size:10px;color:var(--faint);text-align:right;line-height:1.7}
+
+/* Two columns */
+.work{display:grid;gap:18px;grid-template-columns:1fr;margin-top:18px;align-items:start}
+@media (min-width:1080px){.work{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.pane{border:1px solid var(--line);background:var(--card)}
+.pane__head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--line-soft);background:var(--sunk)}
+.pane__head h2{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  font-weight:500;margin:0;color:var(--muted)}
+.pane__note{font-size:10px;color:var(--faint)}
+
+/* Quote document */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-weight:500;color:var(--faint);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;padding:9px 10px;border-bottom:1px solid var(--line-soft)}
+td{padding:8px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.line--flagged{background:var(--madder-soft);box-shadow:inset 3px 0 0 var(--madder)}
+.line--unverified{background:repeating-linear-gradient(135deg,transparent,transparent 5px,#eceae2 5px,#eceae2 10px);
+  box-shadow:inset 3px 0 0 var(--faint)}
+.line--off{opacity:.4}
+.line--off .desc{text-decoration:line-through}
+.qty{width:74px;font-family:var(--mono);font-size:12px;text-align:right;padding:3px 5px;
+  border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.qty:focus-visible{outline:2px solid var(--madder);outline-offset:1px}
+.drop{background:none;border:1px solid var(--line);color:var(--faint);cursor:pointer;
+  font-family:var(--mono);font-size:10px;padding:3px 6px;min-width:30px}
+.drop:hover{border-color:var(--madder);color:var(--madder)}
+.drop:focus-visible{outline:2px solid var(--madder);outline-offset:1px}
+.totals{padding:12px 16px;border-top:1px solid var(--line);display:flex;
+  justify-content:space-between;font-size:12px;background:var(--sunk)}
+.excl{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted)}
+.excl b{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;font-weight:500}
+
+/* Results */
+.results{padding:10px}
+.res{border:1px solid var(--line-soft);margin-bottom:8px;background:var(--paper)}
+.res:last-child{margin-bottom:0}
+.res__top{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;
+  padding:11px 13px;background:none;border:0;cursor:pointer;font-family:var(--mono);
+  font-size:12px;color:var(--ink)}
+.res__top:focus-visible{outline:2px solid var(--madder);outline-offset:-2px}
+.tag{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;
+  border:1px solid;white-space:nowrap;font-weight:500}
+.t-PASS{color:var(--pass);border-color:var(--pass);background:var(--pass-soft)}
+.t-FAIL{color:var(--madder);border-color:var(--madder);background:var(--madder-soft)}
+/* Not a warning. Not filled. "I did not check this" is its own state, and it
+   must not look like a milder version of "this is wrong". */
+.t-CANNOT_VERIFY{color:var(--faint);border-color:var(--faint);background:transparent;border-style:dashed}
+.res__name{font-weight:500}
+.res__sum{color:var(--muted);display:block;margin-top:3px;font-weight:400}
+.res__body{display:none;padding:0 13px 13px;font-size:11px;color:var(--muted)}
+.res.open .res__body{display:block}
+.res__body h4{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  margin:10px 0 5px;font-weight:500}
+.calc{font-family:var(--mono);background:var(--sunk);padding:8px 10px;font-size:11px;color:var(--ink);
+  overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.ev{margin:0;padding-left:16px}
+.ev li{margin-bottom:3px}
+.rem{color:var(--ink)}
+
+/* Scoreboard */
+.score{margin-top:26px;border:1px solid var(--line);background:var(--card)}
+.score__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line-soft)}
+.score__cell{background:var(--card);padding:14px 16px}
+.score__n{font-family:var(--serif);font-size:30px;line-height:1;color:var(--ink)}
+.score__l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:7px;display:block;line-height:1.5}
+.score__note{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted)}
+
+.essay{margin-top:clamp(38px,6vh,72px);padding-top:26px;border-top:1px solid var(--line);
+  font-family:var(--serif);font-size:16px;line-height:1.65;color:#33363c}
+.essay p{max-width:66ch;margin:0 0 16px}
+.essay strong{color:var(--ink)}
+.colophon{font-family:var(--mono);font-size:10px;color:var(--faint);line-height:1.8;max-width:none;
+  margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:700px){ .fx{flex:1 1 100%} .verdict__meta{margin-left:0;text-align:left} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <h1>Quote Assurance</h1>
+    <p class="lede">A pre-send checker for a commercial electrical quote. It compares the draft
+      against the job schedule, the contractor's own price book and past jobs, shows the evidence
+      behind every result, and <b>refuses to bless anything it cannot verify</b>.</p>
+    <p class="synthetic">Synthetic demonstration data</p>
+  </header>
+
+  <p class="legend" style="margin-top:26px">Pick a draft</p>
+  <div class="fixtures" id="fixtures"></div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="work">
+    <section class="pane">
+      <div class="pane__head">
+        <h2>The draft quote</h2>
+        <span class="pane__note">Change a quantity or drop a line and it re-checks</span>
+      </div>
+      <div id="doc"></div>
+    </section>
+
+    <section class="pane">
+      <div class="pane__head">
+        <h2>Checks</h2>
+        <span class="pane__note">Click a check to see its evidence</span>
+      </div>
+      <div class="results" id="results"></div>
+    </section>
+  </div>
+
+  <section class="score">
+    <div class="pane__head"><h2>Scored against every fixture</h2>
+      <span class="pane__note">Recomputed live, in the browser</span></div>
+    <div class="score__grid" id="score"></div>
+    <p class="score__note" id="scoreNote"></p>
+  </section>
+
+  <section class="essay">
+    <p>Every check here returns one of three answers, and the third one is the point.
+      <strong>PASS</strong> means it was checked and it held. <strong>FAIL</strong> means it was
+      checked and it did not. <strong>CANNOT VERIFY</strong> means the evidence needed to check it
+      was missing, so no answer is offered at all. That last state is drawn unfilled and dashed
+      rather than in a warning colour, because it is not a milder kind of failure. It is the
+      absence of a check, and the whole argument is that those two things must never look alike.</p>
+    <p>So the checker cannot pass by being agreeable. Two of the ten drafts are clean controls
+      that must come back <strong>SEND</strong>, which is what stops it flagging everything and
+      calling that diligence. One draft has no schedule to compare against and one line with no
+      price source, and the correct behaviour there is to produce no scope verdict, no margin and
+      no exposure figure. It says what it could not check and what it would need. It does not
+      reach for a market average to fill the hole.</p>
+    <p>The verdict is arithmetic, not prose. Any missing evidence or any high finding is a
+      <strong>HOLD</strong>; anything medium is a <strong>REVIEW</strong>; otherwise
+      <strong>SEND</strong>. No summary, confidence score or interface action can promote it. And
+      SEND means only that these checks passed on these source versions. It is not approval, and
+      it does not send anything.</p>
+    <p class="colophon">Quote Assurance, concept proof. The seven checks and the verdict policy are
+      implemented from a written specification and live in engine.js, apart from this page, so they
+      can be run and scored without a browser. The fixture matrix is frozen: ten drafts, eight with
+      a declared seeded fault, two clean controls. The acceptance run scores catch rate and
+      clean-send rate separately, because a checker that flags everything scores full marks on
+      catches alone. Illustrative electrical rates are synthetic and are not evidence of real
+      pricing. Agent-built, engineer-signed.</p>
+  </section>
+</div>
+
+<p class="vh" id="live" role="status" aria-live="polite"></p>
+
+<script src="engine.js"></script>
+<script>
+(function () {
+  "use strict";
+  var E = window.QA;
+  var el = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+
+  var current = null;   // a working copy, so edits never mutate the frozen fixture
+  var openCheck = null;
+  var highlight = { lines: [], kind: "" };
+
+  function load(fixture) {
+    current = JSON.parse(JSON.stringify(fixture));
+    current.lines.forEach(function (l) { l.on = true; });
+    openCheck = null; highlight = { lines: [], kind: "" };
+    render();
+  }
+
+  function activeQuote() {
+    var q = JSON.parse(JSON.stringify(current));
+    q.lines = q.lines.filter(function (l) { return l.on !== false; });
+    return q;
+  }
+
+  function render() {
+    var q = activeQuote();
+    var run = E.runAssurance(q);
+    renderVerdict(run, q);
+    renderDoc(run);
+    renderResults(run);
+    renderScore();
+  }
+
+  function renderVerdict(run, q) {
+    var why = { SEND: "Every check passed on the supplied source versions. This is not approval, and nothing has been sent.",
+                REVIEW: "Nothing failed outright, but at least one finding is worth a look before sending.",
+                HOLD: "Something failed, or something could not be checked at all." }[run.verdict];
+    el("verdict").innerHTML =
+      '<span class="verdict__badge v-' + run.verdict + '">' + run.verdict + '</span>' +
+      '<span class="verdict__why">' + esc(why) + '</span>' +
+      '<span class="verdict__meta">' +
+        "policy " + esc(E.POLICY.policyVersion) + "<br>" +
+        "schedule " + esc(run.scheduleVersion || "none supplied") + "<br>" +
+        "evaluated " + esc(E.POLICY.evaluationDate) +
+      "</span>";
+  }
+
+  function renderDoc(run) {
+    var rows = current.lines.map(function (l) {
+      var cls = [];
+      if (l.on === false) cls.push("line--off");
+      if (highlight.lines.indexOf(l.id) !== -1)
+        cls.push(highlight.kind === "CANNOT_VERIFY" ? "line--unverified" : "line--flagged");
+      var cost = l.on === false ? null : E.lineCostPence(l);
+      return '<tr class="' + cls.join(" ") + '">' +
+        "<td>" + esc(l.id) + "</td>" +
+        '<td class="desc">' + esc(l.desc) +
+          '<br><span style="color:var(--faint);font-size:10px">' + esc(l.rateId || "no rate source") + "</span></td>" +
+        '<td class="num"><input class="qty" type="number" min="0" step="1" value="' + l.qty +
+          '" data-line="' + esc(l.id) + '" aria-label="Quantity for ' + esc(l.desc) + '"></td>' +
+        "<td>" + esc(l.unit) + "</td>" +
+        '<td class="num">' + (cost === null ? "&mdash;" : E.gbp(cost)) + "</td>" +
+        '<td><button class="drop" data-drop="' + esc(l.id) + '" aria-label="' +
+          (l.on === false ? "Restore" : "Drop") + " " + esc(l.desc) + '">' +
+          (l.on === false ? "add" : "del") + "</button></td></tr>";
+    }).join("");
+
+    el("doc").innerHTML =
+      "<table><thead><tr><th>Ref</th><th>Description</th><th>Qty</th><th>Unit</th>" +
+      "<th>Direct cost</th><th></th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      '<div class="totals"><span>Direct cost ' + E.gbp(run.totals.costPence) + "</span>" +
+      "<span>Sell excluding VAT " + E.gbp(run.totals.sellPence) + "</span></div>" +
+      '<div class="excl"><b>Exclusions</b>' +
+      current.exclusions.map(function (x) { return esc(x); }).join("<br>") + "</div>";
+
+    Array.prototype.forEach.call(el("doc").querySelectorAll(".qty"), function (input) {
+      input.addEventListener("change", function () {
+        var line = current.lines.find(function (l) { return l.id === input.dataset.line; });
+        var v = parseInt(input.value, 10);
+        line.qty = isNaN(v) || v < 0 ? 0 : v;
+        announce("Quantity changed. Re-checked.");
+        render();
+      });
+    });
+    Array.prototype.forEach.call(el("doc").querySelectorAll(".drop"), function (b) {
+      b.addEventListener("click", function () {
+        var line = current.lines.find(function (l) { return l.id === b.dataset.drop; });
+        line.on = line.on === false;
+        announce(line.on === false ? "Line dropped. Re-checked." : "Line restored. Re-checked.");
+        render();
+      });
+    });
+  }
+
+  var CHECK_NAMES = {
+    SCOPE_COVERAGE: "Scope coverage", RATE_SOURCE_AGE: "Rate source and age",
+    QUANTITY_OUTLIER: "Quantity outlier", MARGIN: "Margin",
+    STANDARD_ITEMS: "Standard items", CONTRADICTION: "Internal contradiction",
+    DOWNSIDE_EXPOSURE: "Downside exposure",
+  };
+
+  function renderResults(run) {
+    el("results").innerHTML = run.results.map(function (r) {
+      var open = openCheck === r.check;
+      return '<div class="res' + (open ? " open" : "") + '">' +
+        '<button class="res__top" data-check="' + r.check + '" aria-expanded="' + open + '">' +
+          '<span class="tag t-' + r.status + '">' + r.status.replace("_", " ") + "</span>" +
+          '<span><span class="res__name">' + esc(CHECK_NAMES[r.check]) + "</span>" +
+          '<span class="res__sum">' + esc(r.summary) + "</span></span>" +
+        "</button>" +
+        '<div class="res__body">' +
+          (r.calculation ? "<h4>Calculation</h4><div class=\"calc\">" +
+            esc(r.calculation.formula) + "\n" + esc(r.calculation.output) + "</div>" : "") +
+          (r.evidence && r.evidence.length ? "<h4>Evidence</h4><ul class=\"ev\">" +
+            r.evidence.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>" : "") +
+          (r.remediation ? '<h4>What to do</h4><p class="rem">' + esc(r.remediation) + "</p>" : "") +
+          "<h4>Reason code</h4><div class=\"calc\">" + esc(r.reasonCode) + "</div>" +
+        "</div></div>";
+    }).join("");
+
+    Array.prototype.forEach.call(el("results").querySelectorAll(".res__top"), function (b) {
+      b.addEventListener("click", function () {
+        var r = run.results.find(function (x) { return x.check === b.dataset.check; });
+        openCheck = openCheck === r.check ? null : r.check;
+        highlight = openCheck ? { lines: r.affectedLineIds || [], kind: r.status } : { lines: [], kind: "" };
+        renderDoc(run); renderResults(run);
+      });
+    });
+  }
+
+  function renderScore() {
+    var seeded = E.QUOTES.filter(function (q) { return q.expected !== "SEND"; });
+    var clean = E.QUOTES.filter(function (q) { return q.expected === "SEND"; });
+    var caught = seeded.filter(function (q) { return E.runAssurance(q).verdict !== "SEND"; }).length;
+    var sent = clean.filter(function (q) { return E.runAssurance(q).verdict === "SEND"; }).length;
+    var exact = E.QUOTES.filter(function (q) { return E.runAssurance(q).verdict === q.expected; }).length;
+    var cells = [
+      [caught + "/" + seeded.length, "seeded faults caught"],
+      [sent + "/" + clean.length, "clean drafts correctly sent"],
+      [exact + "/" + E.QUOTES.length, "verdicts matching the frozen matrix"],
+      ["7", "checks per draft, every one reported"],
+    ];
+    el("score").innerHTML = cells.map(function (c) {
+      return '<div class="score__cell"><span class="score__n">' + c[0] +
+        '</span><span class="score__l">' + c[1] + "</span></div>";
+    }).join("");
+    el("scoreNote").textContent =
+      "Catch rate and clean-send rate are scored separately on purpose. A checker that flags " +
+      "everything scores full marks on catches and is worthless, which is what the two clean " +
+      "controls exist to prevent.";
+  }
+
+  function announce(m) { el("live").textContent = m; }
+
+  E.QUOTES.forEach(function (q, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "fx";
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.innerHTML = "<span>" + esc(q.title) + "</span><small>" + esc(q.id) + "</small>";
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(el("fixtures").children, function (n) {
+        n.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      load(q);
+      announce("Loaded " + q.title);
+    });
+    el("fixtures").appendChild(b);
+  });
+
+  load(E.QUOTES[0]);
+})();
+</script>
+</body>
+</html>
