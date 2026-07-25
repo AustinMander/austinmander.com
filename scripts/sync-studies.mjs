@@ -153,11 +153,48 @@ function gate(piece, ids) {
       "no NOTES.md (every published piece must carry its reasoning)"
     );
 
-  // Brief-ID leak: check the document title and the visible text.
-  const haystack = `${documentTitle(html)} \n ${visibleText(html)}`;
-  const leaked = ids.filter((id) => new RegExp(`\\b${id}\\b`).test(haystack));
+  // A piece may declare an exception, but never a silent one. The marker is
+  // honoured only with a stated reason, and every allowance is recorded in the
+  // manifest, so a waived rule stays visible instead of looking like a pass.
+  //   <!-- GATE-ALLOW: M2 reason: the subject of the study, not a leak -->
+  const allowances = [];
+  for (const m of html.matchAll(
+    /<!--\s*GATE-ALLOW:\s*([A-Za-z0-9]+)\s+reason:\s*([^>]*?)\s*-->/gi
+  )) {
+    const id = m[1].toUpperCase();
+    const reason = m[2].trim();
+    if (!reason) {
+      reasons.push(`GATE-ALLOW for ${id} has no stated reason`);
+      continue;
+    }
+    allowances.push({ id, reason });
+  }
+  const allowed = new Set(allowances.map((a) => a.id));
+
+  // Brief-ID leak: check the document title and the visible text, plus the notes
+  // title and intent. Those two are rendered into the gallery card, so scanning
+  // only index.html would let an ID reach a public surface unchecked.
+  const haystack = [
+    documentTitle(html),
+    visibleText(html),
+    notes?.title ?? "",
+    notes?.intent ?? "",
+  ].join(" \n ");
+  const leaked = ids.filter(
+    (id) => !allowed.has(id) && new RegExp(`\\b${id}\\b`).test(haystack)
+  );
   if (leaked.length) {
     reasons.push(`internal brief ID visible on the page: ${leaked.join(", ")}`);
+  }
+
+  // An allowance that no longer matches anything is stale. Say so, so waivers
+  // cannot quietly outlive the thing they were granted for.
+  for (const a of allowances) {
+    if (!new RegExp(`\\b${a.id}\\b`).test(haystack)) {
+      reasons.push(
+        `GATE-ALLOW for ${a.id} is stale (that ID is not on the page)`
+      );
+    }
   }
 
   // Relative references must resolve to a sibling file we can copy alongside.
@@ -175,7 +212,7 @@ function gate(piece, ids) {
     }
   }
 
-  return { html, notes, assets, reasons };
+  return { html, notes, assets, reasons, allowances };
 }
 
 function renderGallery(published) {
@@ -280,7 +317,7 @@ function main() {
   const held = [];
 
   for (const piece of pieces) {
-    const { html, notes, assets, reasons } = gate(piece, ids);
+    const { html, notes, assets, reasons, allowances } = gate(piece, ids);
     const title = displayTitle(
       piece.kind,
       piece.slug,
@@ -303,6 +340,7 @@ function main() {
       href: `/studies/${piece.slug}`,
       bytes: Buffer.byteLength(html),
       assets,
+      allowances,
     });
 
     if (!CHECK_ONLY) {
@@ -333,7 +371,12 @@ function main() {
   }
 
   console.log(`\nPublished ${published.length}:`);
-  for (const p of published) console.log(`  ${p.slug.padEnd(22)} ${p.title}`);
+  for (const p of published) {
+    console.log(`  ${p.slug.padEnd(22)} ${p.title}`);
+    for (const a of p.allowances) {
+      console.log(`      waived ${a.id}: ${a.reason}`);
+    }
+  }
   if (held.length) {
     console.log(`\nHeld ${held.length} (fix in motion-lab, then re-run):`);
     for (const h of held) {

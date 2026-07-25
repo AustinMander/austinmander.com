@@ -8,7 +8,8 @@
       "intent": "This study rebuilds the crossfade as two fully procedural Canvas 2D worlds driven by one virtual-scroll scalar. Orbit owns `0.00–0.55`, both renderers run only through the `0.55–0.70` handoff, and arrival owns `0.70–1.00`. The visual contrast is deliberate: a point-grid cartographic night gives way to a flat, warm editorial courtyard without resetting the camera or altitude readout.",
       "href": "/studies/study-05",
       "bytes": 36875,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "study-07",
@@ -17,7 +18,8 @@
       "intent": "This study treats pacing as the authored material. Five editorial segments share one virtual-scroll scalar. Three statements are held longer than the two canvas interludes, so the automatic pass has deliberate pauses and quicker transits instead of constant speed.",
       "href": "/studies/study-07",
       "bytes": 64969,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "study-08",
@@ -26,7 +28,8 @@
       "intent": "This study makes the WebGL scene and semantic DOM typography read as one spatial rig. Six procedural glass slabs and five real text statements occupy fixed world coordinates. A single virtual-scroll scalar moves one camera through the set.",
       "href": "/studies/study-08",
       "bytes": 46507,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "study-09",
@@ -35,7 +38,8 @@
       "intent": "This study makes the particle count auditable. The live path allocates one storage buffer containing fixed 32-byte structs. The HUD derives the displayed population from `GPUBuffer.size / 32`; it does not reuse the requested count as display copy.",
       "href": "/studies/study-09",
       "bytes": 51329,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "study-10",
@@ -44,7 +48,23 @@
       "intent": "This study treats scroll effects as retention mechanics. The reader moves through a long essay about generated abundance, adversarial review and engineer-signed authorship. Three full-bleed plates interrupt that reading rhythm. Each plate stays fixed while several passages cross it, then releases the reader back into ordinary prose.",
       "href": "/studies/study-10",
       "bytes": 36230,
-      "assets": []
+      "assets": [],
+      "allowances": []
+    },
+    {
+      "slug": "study-11",
+      "kind": "study",
+      "title": "Study 11 / The silent pass",
+      "intent": "This study is about the failure mode where a check does not fail. It simply never runs, prints nothing, and is indistinguishable from a clean result. The reader is shown three real commands, all of which produced no output, and asked to judge them on that output alone. Only then does the instrument itself become visible, and two of the three turn out never to have executed.",
+      "href": "/studies/study-11",
+      "bytes": 15699,
+      "assets": [],
+      "allowances": [
+        {
+          "id": "M2",
+          "reason": "the subject of the study, printed deliberately, not a leak"
+        }
+      ]
     },
     {
       "slug": "burn-ledger",
@@ -55,7 +75,8 @@
       "bytes": 5459,
       "assets": [
         "render.js"
-      ]
+      ],
+      "allowances": []
     },
     {
       "slug": "editions",
@@ -64,7 +85,8 @@
       "intent": "`EDITIONS 001–012` uses one layered flow-field system throughout the series. Seeded multi-octave value noise steers line-integral paths through a fixed print field. Edition parameters alter density, scale, curl, directional drift, and a restrained ink set while preserving one visual grammar.",
       "href": "/studies/editions",
       "bytes": 29670,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "foundation-sheet",
@@ -73,7 +95,8 @@
       "intent": "The sheet uses a two-layer token model inside the single `index.html` file.",
       "href": "/studies/foundation-sheet",
       "bytes": 51079,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "rebuilt-01-tilt",
@@ -82,7 +105,8 @@
       "intent": "Measured from `index.html` after the final source edit on 22 July 2026:",
       "href": "/studies/rebuilt-01-tilt",
       "bytes": 26160,
-      "assets": []
+      "assets": [],
+      "allowances": []
     },
     {
       "slug": "rebuilt-02-beams",
@@ -91,7 +115,8 @@
       "intent": "Measured from `index.html` after the final source edit on 22 July 2026:",
       "href": "/studies/rebuilt-02-beams",
       "bytes": 26947,
-      "assets": []
+      "assets": [],
+      "allowances": []
     }
   ],
   "held": [
@@ -108,7 +133,7 @@
       "kind": "artefact",
       "title": "K2 / Constellation Depth",
       "reasons": [
-        "internal brief ID visible on the page: K2"
+        "internal brief ID visible on the page: K1, K2"
       ]
     },
     {
