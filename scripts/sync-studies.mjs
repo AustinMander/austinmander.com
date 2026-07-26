@@ -290,7 +290,7 @@ function renderGallery(published) {
   const rest = published.filter((p) => p !== hero);
 
   const featured = hero
-    ? `    <a class="lede-piece" href="${hero.href}">
+    ? `    <a class="lede-piece reveal" href="${hero.href}">
       ${hero.thumb ? `<img class="lede-piece__shot" src="${hero.thumb}" alt="" width="1200" height="675" loading="eager">` : ""}
       <div class="lede-piece__body">
         <span class="lede-piece__kind">${escapeHtml(hero.feature.kind)}</span>
@@ -303,7 +303,7 @@ function renderGallery(published) {
 
   const cards = rest
     .map(
-      (p) => `      <li class="piece">
+      (p) => `      <li class="piece reveal">
         <a class="piece__link" href="/studies/${p.slug}">
           <span class="piece__kind">${p.kind === "study" ? "Study" : "Artefact"}</span>
           <h2 class="piece__title">${escapeHtml(p.title)}</h2>
@@ -379,14 +379,31 @@ h1{font-family:var(--display);font-size:clamp(34px,6vw,56px);line-height:1.05;
 footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:12px;color:var(--faint)}
 a.home{color:var(--accent)}
-@media (prefers-reduced-motion:reduce){.piece__link{transition:none}}
+
+/* Reveal on enter. The durations are deliberately mismatched: a 900ms fade
+   against a 700ms travel, so the element arrives in place before it has
+   finished fading and settles rather than drifts. Matching them is what makes
+   most implementations of this read floaty. Values measured from a captured
+   production page rather than invented. */
+:root{--rise:30px;--fade:.9s;--travel:.7s;--stagger:150ms;
+  --ease:cubic-bezier(.2,.6,.2,1)}
+/* Only hide anything once the script has confirmed it can show it again. With
+   JS off or broken, nothing is invisible. */
+.js .reveal{opacity:0;transform:translateY(var(--rise));
+  transition:opacity var(--fade) var(--ease),transform var(--travel) var(--ease);
+  transition-delay:calc(var(--i,0) * var(--stagger))}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .piece__link{transition:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="brand" href="/">Austin Mander<span class="dot">.</span></a>
   <header>
-    <p class="eyebrow">Craft ledger</p>
+    <p class="eyebrow reveal">Craft ledger</p>
     <h1>Studies</h1>
     <p class="lede">Scroll studies and craft artefacts, each one a single self-contained page with no
       dependencies and no external requests. Every piece carries the reasoning behind it and the
@@ -402,6 +419,68 @@ ${cards}
     <p>${published.length} pieces published. <a class="home" href="/">Return home</a></p>
   </footer>
 </div>
+<script>
+(function () {
+  "use strict";
+  var doc = document.documentElement;
+  // Claim the hidden state only now that we can definitely undo it.
+  doc.classList.add("js");
+
+  var items = [].slice.call(document.querySelectorAll(".reveal"));
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function showAll() { items.forEach(function (el) { el.classList.add("in"); }); items = []; }
+  if (reduced) return showAll();
+
+  // Stagger per row rather than in document order, so a wide row lights up
+  // together instead of sweeping left to right like a wave.
+  var rows = {};
+  items.forEach(function (el) {
+    var top = Math.round(el.getBoundingClientRect().top + window.scrollY);
+    (rows[top] = rows[top] || []).push(el);
+  });
+  Object.keys(rows).forEach(function (top) {
+    rows[top].forEach(function (el, i) { el.style.setProperty("--i", i); });
+  });
+
+  // Reveal anything that has reached the bottom of the viewport, INCLUDING
+  // anything already scrolled past. An IntersectionObserver alone leaves those
+  // hidden forever: jump to the bottom of the page, or flick hard on a phone,
+  // and every element you skipped never intersects and never appears.
+  function show(el) {
+    el.style.willChange = "opacity, transform";
+    el.classList.add("in");
+    // Release the compositor hint afterwards rather than leaving every element
+    // promoted for the life of the page.
+    setTimeout(function () { el.style.willChange = "auto"; }, 1200);
+  }
+
+  var ticking = false;
+  function check() {
+    ticking = false;
+    var fold = window.innerHeight * 0.92;
+    var remaining = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].getBoundingClientRect().top < fold) show(items[i]);
+      else remaining.push(items[i]);
+    }
+    items = remaining;
+    if (!items.length) {
+      window.removeEventListener("scroll", queue);
+      window.removeEventListener("resize", queue);
+    }
+  }
+  function queue() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(check);
+  }
+
+  window.addEventListener("scroll", queue, { passive: true });
+  window.addEventListener("resize", queue);
+  check();
+})();
+</script>
 </body>
 </html>
 `;

@@ -64,21 +64,38 @@ h1{font-family:var(--display);font-size:clamp(34px,6vw,56px);line-height:1.05;
 footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:12px;color:var(--faint)}
 a.home{color:var(--accent)}
-@media (prefers-reduced-motion:reduce){.piece__link{transition:none}}
+
+/* Reveal on enter. The durations are deliberately mismatched: a 900ms fade
+   against a 700ms travel, so the element arrives in place before it has
+   finished fading and settles rather than drifts. Matching them is what makes
+   most implementations of this read floaty. Values measured from a captured
+   production page rather than invented. */
+:root{--rise:30px;--fade:.9s;--travel:.7s;--stagger:150ms;
+  --ease:cubic-bezier(.2,.6,.2,1)}
+/* Only hide anything once the script has confirmed it can show it again. With
+   JS off or broken, nothing is invisible. */
+.js .reveal{opacity:0;transform:translateY(var(--rise));
+  transition:opacity var(--fade) var(--ease),transform var(--travel) var(--ease);
+  transition-delay:calc(var(--i,0) * var(--stagger))}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .piece__link{transition:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="brand" href="/">Austin Mander<span class="dot">.</span></a>
   <header>
-    <p class="eyebrow">Craft ledger</p>
+    <p class="eyebrow reveal">Craft ledger</p>
     <h1>Studies</h1>
     <p class="lede">Scroll studies and craft artefacts, each one a single self-contained page with no
       dependencies and no external requests. Every piece carries the reasoning behind it and the
       checks it passed before it shipped.</p>
   </header>
   <main>
-    <a class="lede-piece" href="/studies/study-10">
+    <a class="lede-piece reveal" href="/studies/study-10">
       <img class="lede-piece__shot" src="/studies/study-10/thumb.png" alt="" width="1200" height="675" loading="eager">
       <div class="lede-piece__body">
         <span class="lede-piece__kind">essay</span>
@@ -88,84 +105,84 @@ a.home{color:var(--accent)}
       </div>
     </a>
     <ul class="pieces">
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/study-05">
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 05 / Two worlds, one camera</h2>
           <p class="piece__intent">This study rebuilds the crossfade as two fully procedural Canvas 2D worlds driven by one virtual-scroll scalar. Orbit owns 0.00–0.55, both renderers run only through the 0.55–0.70 handoff, and arrival owns 0.70–1.00. The visual contrast is deliberate: a point-grid cartographic night gives way to a flat, warm editorial courtyard without resetting the camera or altitude readout.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/study-07">
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 07 / The autopilot</h2>
           <p class="piece__intent">This study treats pacing as the authored material. Five editorial segments share one virtual-scroll scalar. Three statements are held longer than the two canvas interludes, so the automatic pass has deliberate pauses and quicker transits instead of constant speed.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/study-08">
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 08 / The seam</h2>
           <p class="piece__intent">This study makes the WebGL scene and semantic DOM typography read as one spatial rig. Six procedural glass slabs and five real text statements occupy fixed world coordinates. A single virtual-scroll scalar moves one camera through the set.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/study-09">
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 09 / A million, exactly</h2>
           <p class="piece__intent">This study makes the particle count auditable. The live path allocates one storage buffer containing fixed 32-byte structs. The HUD derives the displayed population from GPUBuffer.size / 32; it does not reuse the requested count as display copy.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/study-11">
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 11 / The silent pass</h2>
           <p class="piece__intent">This study is about the failure mode where a check does not fail. It simply never runs, prints nothing, and is indistinguishable from a clean result. The reader is shown three real commands, all of which produced no output, and asked to judge them on that output alone. Only then does the instrument itself become visible, and two of the three turn out never to have executed.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/burn-ledger">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">The Burn Ledger</h2>
           <p class="piece__intent">This graphic encodes the supplied run-ledger notes only. The horizontal clock is deliberately labelled approximate because the source notes do not provide precise timestamps.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/editions">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Mander Editions</h2>
           <p class="piece__intent">EDITIONS 001–012 uses one layered flow-field system throughout the series. Seeded multi-octave value noise steers line-integral paths through a fixed print field. Edition parameters alter density, scale, curl, directional drift, and a restrained ink set while preserving one visual grammar.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/foundation-sheet">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Foundation Sheet 01</h2>
           <p class="piece__intent">The sheet uses a two-layer token model inside the single index.html file.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/loom">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Loom</h2>
           <p class="piece__intent">A working eight shaft loom in a single page. Three small tables describe how the warp is threaded, what each treadle lifts, and which treadle is pressed for each pass of the shuttle. The cloth in the middle is not drawn, it is derived from those tables on every edit. The point of building it is the property that falls out for free: every crossing in the fabric is the result of exactly one comparison, so you can point at any single thread and recover the three decisions that produced it. Hovering the cloth names them.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/quote-assurance">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Quote Assurance</h2>
           <p class="piece__intent">A pre-send checker for a commercial electrical quote, built as a working concept proof rather than a mockup. It compares a draft against the job schedule, the contractor's own price book, a standard-items policy and comparable completed jobs, then returns one of three answers per check and a verdict computed by fixed rules. The interesting answer is the third one: not pass, not fail, but the evidence needed to decide was missing, so no answer is offered at all.</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/rebuilt-01-tilt">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Rebuilt 01: Tilt</h2>
           <p class="piece__intent">Measured from index.html after the final source edit on 22 July 2026:</p>
         </a>
       </li>
-      <li class="piece">
+      <li class="piece reveal">
         <a class="piece__link" href="/studies/rebuilt-02-beams">
           <span class="piece__kind">Artefact</span>
           <h2 class="piece__title">Rebuilt 02: Beams and spotlight</h2>
@@ -178,5 +195,67 @@ a.home{color:var(--accent)}
     <p>13 pieces published. <a class="home" href="/">Return home</a></p>
   </footer>
 </div>
+<script>
+(function () {
+  "use strict";
+  var doc = document.documentElement;
+  // Claim the hidden state only now that we can definitely undo it.
+  doc.classList.add("js");
+
+  var items = [].slice.call(document.querySelectorAll(".reveal"));
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function showAll() { items.forEach(function (el) { el.classList.add("in"); }); items = []; }
+  if (reduced) return showAll();
+
+  // Stagger per row rather than in document order, so a wide row lights up
+  // together instead of sweeping left to right like a wave.
+  var rows = {};
+  items.forEach(function (el) {
+    var top = Math.round(el.getBoundingClientRect().top + window.scrollY);
+    (rows[top] = rows[top] || []).push(el);
+  });
+  Object.keys(rows).forEach(function (top) {
+    rows[top].forEach(function (el, i) { el.style.setProperty("--i", i); });
+  });
+
+  // Reveal anything that has reached the bottom of the viewport, INCLUDING
+  // anything already scrolled past. An IntersectionObserver alone leaves those
+  // hidden forever: jump to the bottom of the page, or flick hard on a phone,
+  // and every element you skipped never intersects and never appears.
+  function show(el) {
+    el.style.willChange = "opacity, transform";
+    el.classList.add("in");
+    // Release the compositor hint afterwards rather than leaving every element
+    // promoted for the life of the page.
+    setTimeout(function () { el.style.willChange = "auto"; }, 1200);
+  }
+
+  var ticking = false;
+  function check() {
+    ticking = false;
+    var fold = window.innerHeight * 0.92;
+    var remaining = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].getBoundingClientRect().top < fold) show(items[i]);
+      else remaining.push(items[i]);
+    }
+    items = remaining;
+    if (!items.length) {
+      window.removeEventListener("scroll", queue);
+      window.removeEventListener("resize", queue);
+    }
+  }
+  function queue() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(check);
+  }
+
+  window.addEventListener("scroll", queue, { passive: true });
+  window.addEventListener("resize", queue);
+  check();
+})();
+</script>
 </body>
 </html>

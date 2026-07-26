@@ -113,9 +113,14 @@
 
     .hero {
       min-height: 132svh;
-      padding: clamp(8rem, 20vh, 13rem) clamp(1.25rem, 5vw, 5rem) clamp(5rem, 13vh, 9rem);
+      /* Top padding only has to clear the masthead, which sits at 1rem and is
+         about 2rem tall. It was reserving up to 13rem, which read as a dead band
+         above the title rather than as composition. */
+      padding: clamp(4.5rem, 9vh, 7rem) clamp(1.25rem, 5vw, 5rem) clamp(5rem, 13vh, 9rem);
       display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(15rem, .45fr);
+      /* Wider second column. At the old .45fr the lead set to about five words a
+         line, which is a caption measure, not a reading one. */
+      grid-template-columns: minmax(0, 1.35fr) minmax(19rem, .65fr);
       grid-template-rows: 1fr auto;
       gap: 4rem clamp(2rem, 7vw, 8rem);
       background:
@@ -124,7 +129,11 @@
     }
 
     .hero__title {
-      align-self: center;
+      /* Was centred inside a 132svh row, which put roughly 300px of dead space
+         above the first word no matter how much the padding was trimmed. The
+         padding was never the cause. Sitting it at the start of its row also
+         gives the lead, which stays bottom-right, something to lean against. */
+      align-self: start;
       max-width: 10.4ch;
       margin: 0 0 0 -.055em;
       font-family: var(--serif);
