@@ -58,6 +58,17 @@ function visibleText(html) {
     .replace(/<[^>]+>/g, " ");
 }
 
+// A piece can declare itself the featured entry, with a reason, using the same
+// visible-marker pattern as GATE-ALLOW. Exactly one may claim it; a second is an
+// error rather than a silent last-one-wins.
+//   <!-- FEATURED: essay reason: long form, read this first -->
+function featureMarker(html) {
+  const m = /<!--\s*FEATURED:\s*(\w+)\s+reason:\s*([^>]*?)\s*-->/i.exec(html);
+  if (!m) return null;
+  const reason = m[2].trim();
+  return reason ? { kind: m[1].toLowerCase(), reason } : { kind: m[1].toLowerCase(), reason: "" };
+}
+
 function documentTitle(html) {
   const m = /<title>([\s\S]*?)<\/title>/i.exec(html);
   return m ? m[1].trim() : "";
@@ -218,7 +229,12 @@ function gate(piece, ids) {
     }
   }
 
-  return { html, notes, assets, reasons, allowances };
+  const feature = featureMarker(html);
+  if (feature && !feature.reason) {
+    reasons.push("FEATURED marker has no stated reason");
+  }
+
+  return { html, notes, assets, reasons, allowances, feature };
 }
 
 // Pieces are served at an extensionless URL, /studies/<slug>, so a relative
@@ -256,7 +272,22 @@ function inlineAssets(html, dir) {
 }
 
 function renderGallery(published) {
-  const cards = published
+  const hero = published.find((p) => p.feature) || null;
+  const rest = published.filter((p) => p !== hero);
+
+  const featured = hero
+    ? `    <a class="lede-piece" href="${hero.href}">
+      ${hero.thumb ? `<img class="lede-piece__shot" src="${hero.thumb}" alt="" width="1200" height="675" loading="eager">` : ""}
+      <div class="lede-piece__body">
+        <span class="lede-piece__kind">${escapeHtml(hero.feature.kind)}</span>
+        <h2 class="lede-piece__title">${escapeHtml(hero.title)}</h2>
+        <p class="lede-piece__intent">${escapeHtml(hero.intent)}</p>
+        <span class="lede-piece__go">Read it</span>
+      </div>
+    </a>`
+    : "";
+
+  const cards = rest
     .map(
       (p) => `      <li class="piece">
         <a class="piece__link" href="/studies/${p.slug}">
@@ -297,6 +328,27 @@ header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40p
 h1{font-family:var(--display);font-size:clamp(34px,6vw,56px);line-height:1.05;
   margin:0 0 14px;font-weight:600}
 .lede{margin:0;max-width:62ch;color:var(--muted)}
+/* The featured entry. Different format, so it gets a different shape rather than
+   being the first of thirteen equal cards. */
+.lede-piece{display:grid;grid-template-columns:1fr;gap:0;margin:0 0 44px;
+  border:1px solid var(--line-soft);background:var(--panel);text-decoration:none;color:inherit;
+  transition:border-color .18s ease}
+@media (min-width:820px){.lede-piece{grid-template-columns:1.1fr 1fr;align-items:stretch}}
+.lede-piece:hover,.lede-piece:focus-visible{border-color:var(--accent)}
+.lede-piece:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.lede-piece__shot{display:block;width:100%;height:100%;max-height:340px;object-fit:cover;
+  object-position:left top;border-bottom:1px solid var(--line-soft)}
+@media (min-width:820px){.lede-piece__shot{border-bottom:0;border-right:1px solid var(--line-soft)}}
+.lede-piece__body{padding:clamp(22px,3vw,34px);display:flex;flex-direction:column;justify-content:center}
+.lede-piece__kind{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.lede-piece__title{font-family:var(--display);font-size:clamp(26px,3.4vw,40px);line-height:1.08;
+  margin:12px 0 14px;font-weight:600}
+.lede-piece__intent{margin:0;color:var(--muted);font-size:16px;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.lede-piece__go{margin-top:18px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent)}
+
 .pieces{list-style:none;margin:0;padding:0;display:grid;gap:20px;
   grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .piece__link{display:block;height:100%;padding:24px;background:var(--panel);
@@ -327,6 +379,7 @@ a.home{color:var(--accent)}
       checks it passed before it shipped.</p>
   </header>
   <main>
+${featured}
     <ul class="pieces">
 ${cards}
     </ul>
@@ -363,13 +416,12 @@ function main() {
   const held = [];
 
   for (const piece of pieces) {
-    const { html, notes, assets, reasons, allowances } = gate(piece, ids);
-    const title = displayTitle(
-      piece.kind,
-      piece.slug,
-      notes?.title,
-      documentTitle(html)
-    );
+    const { html, notes, assets, reasons, allowances, feature } = gate(piece, ids);
+    // A featured piece keeps its own title. The "Study NN /" normalisation is for
+    // the numbered craft series and would bury an essay inside it.
+    const title = feature
+      ? houseCopy(notes?.title || documentTitle(html) || piece.slug)
+      : displayTitle(piece.kind, piece.slug, notes?.title, documentTitle(html));
 
     if (reasons.length) {
       held.push({ slug: piece.slug, kind: piece.kind, title, reasons });
@@ -387,6 +439,12 @@ function main() {
       bytes: Buffer.byteLength(html),
       assets,
       allowances,
+      feature,
+      // Referenced from the gallery with an absolute path, because the gallery
+      // and the piece sit at different URL depths and a relative one would break.
+      thumb: existsSync(join(piece.dir, "thumb.png"))
+        ? `/studies/${piece.slug}/thumb.png`
+        : null,
     });
 
     if (!CHECK_ONLY) {
@@ -394,6 +452,11 @@ function main() {
       rmSync(dest, { recursive: true, force: true });
       mkdirSync(dest, { recursive: true });
       writeFileSync(join(dest, "index.html"), inlineAssets(html, piece.dir));
+      // The thumbnail is not referenced by the piece itself, so the asset walk
+      // below never sees it. Copy it explicitly or the gallery card 404s.
+      if (existsSync(join(piece.dir, "thumb.png"))) {
+        copyFileSync(join(piece.dir, "thumb.png"), join(dest, "thumb.png"));
+      }
       for (const asset of assets) {
         const to = join(dest, asset);
         mkdirSync(dirname(to), { recursive: true });

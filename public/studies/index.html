@@ -27,6 +27,27 @@ header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40p
 h1{font-family:var(--display);font-size:clamp(34px,6vw,56px);line-height:1.05;
   margin:0 0 14px;font-weight:600}
 .lede{margin:0;max-width:62ch;color:var(--muted)}
+/* The featured entry. Different format, so it gets a different shape rather than
+   being the first of thirteen equal cards. */
+.lede-piece{display:grid;grid-template-columns:1fr;gap:0;margin:0 0 44px;
+  border:1px solid var(--line-soft);background:var(--panel);text-decoration:none;color:inherit;
+  transition:border-color .18s ease}
+@media (min-width:820px){.lede-piece{grid-template-columns:1.1fr 1fr;align-items:stretch}}
+.lede-piece:hover,.lede-piece:focus-visible{border-color:var(--accent)}
+.lede-piece:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.lede-piece__shot{display:block;width:100%;height:100%;max-height:340px;object-fit:cover;
+  object-position:left top;border-bottom:1px solid var(--line-soft)}
+@media (min-width:820px){.lede-piece__shot{border-bottom:0;border-right:1px solid var(--line-soft)}}
+.lede-piece__body{padding:clamp(22px,3vw,34px);display:flex;flex-direction:column;justify-content:center}
+.lede-piece__kind{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.lede-piece__title{font-family:var(--display);font-size:clamp(26px,3.4vw,40px);line-height:1.08;
+  margin:12px 0 14px;font-weight:600}
+.lede-piece__intent{margin:0;color:var(--muted);font-size:16px;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.lede-piece__go{margin-top:18px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent)}
+
 .pieces{list-style:none;margin:0;padding:0;display:grid;gap:20px;
   grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .piece__link{display:block;height:100%;padding:24px;background:var(--panel);
@@ -57,6 +78,15 @@ a.home{color:var(--accent)}
       checks it passed before it shipped.</p>
   </header>
   <main>
+    <a class="lede-piece" href="/studies/study-10">
+      <img class="lede-piece__shot" src="/studies/study-10/thumb.png" alt="" width="1200" height="675" loading="eager">
+      <div class="lede-piece__body">
+        <span class="lede-piece__kind">essay</span>
+        <h2 class="lede-piece__title">The answer is almost always yes</h2>
+        <p class="lede-piece__intent">Producing software is no longer the hard part. Almost anything a client asks for can now be built, and quickly, which means effort has stopped being evidence that anyone thought carefully about it. This essay is about what replaces that evidence: the judgement to know which answer is actually right, the discipline to go and find the edge case that speed glosses over, and the honesty to say plainly what has not been checked.</p>
+        <span class="lede-piece__go">Read it</span>
+      </div>
+    </a>
     <ul class="pieces">
       <li class="piece">
         <a class="piece__link" href="/studies/study-05">
@@ -84,13 +114,6 @@ a.home{color:var(--accent)}
           <span class="piece__kind">Study</span>
           <h2 class="piece__title">Study 09 / A million, exactly</h2>
           <p class="piece__intent">This study makes the particle count auditable. The live path allocates one storage buffer containing fixed 32-byte structs. The HUD derives the displayed population from GPUBuffer.size / 32; it does not reuse the requested count as display copy.</p>
-        </a>
-      </li>
-      <li class="piece">
-        <a class="piece__link" href="/studies/study-10">
-          <span class="piece__kind">Study</span>
-          <h2 class="piece__title">Study 10 / The considered pause</h2>
-          <p class="piece__intent">This study treats scroll effects as retention mechanics. The reader moves through a long essay about generated abundance, adversarial review and engineer-signed authorship. Three full-bleed plates interrupt that reading rhythm. Each plate stays fixed while several passages cross it, then releases the reader back into ordinary prose.</p>
         </a>
       </li>
       <li class="piece">

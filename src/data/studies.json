@@ -9,7 +9,9 @@
       "href": "/studies/study-05",
       "bytes": 36875,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "study-07",
@@ -19,7 +21,9 @@
       "href": "/studies/study-07",
       "bytes": 64969,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "study-08",
@@ -29,7 +33,9 @@
       "href": "/studies/study-08",
       "bytes": 46507,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "study-09",
@@ -39,17 +45,24 @@
       "href": "/studies/study-09",
       "bytes": 51329,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "study-10",
       "kind": "study",
-      "title": "Study 10 / The considered pause",
-      "intent": "This study treats scroll effects as retention mechanics. The reader moves through a long essay about generated abundance, adversarial review and engineer-signed authorship. Three full-bleed plates interrupt that reading rhythm. Each plate stays fixed while several passages cross it, then releases the reader back into ordinary prose.",
+      "title": "The answer is almost always yes",
+      "intent": "Producing software is no longer the hard part. Almost anything a client asks for can now be built, and quickly, which means effort has stopped being evidence that anyone thought carefully about it. This essay is about what replaces that evidence: the judgement to know which answer is actually right, the discipline to go and find the edge case that speed glosses over, and the honesty to say plainly what has not been checked.",
       "href": "/studies/study-10",
-      "bytes": 37245,
+      "bytes": 37376,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": {
+        "kind": "essay",
+        "reason": "long form, and the piece a client should read first"
+      },
+      "thumb": "/studies/study-10/thumb.png"
     },
     {
       "slug": "study-11",
@@ -64,7 +77,9 @@
           "id": "M2",
           "reason": "the subject of the study, printed deliberately, not a leak"
         }
-      ]
+      ],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "burn-ledger",
@@ -77,7 +92,9 @@
         "data-bundle.js",
         "render.js"
       ],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "editions",
@@ -87,7 +104,9 @@
       "href": "/studies/editions",
       "bytes": 29670,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "foundation-sheet",
@@ -97,7 +116,9 @@
       "href": "/studies/foundation-sheet",
       "bytes": 51079,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "loom",
@@ -107,7 +128,9 @@
       "href": "/studies/loom",
       "bytes": 44935,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "quote-assurance",
@@ -119,7 +142,9 @@
       "assets": [
         "engine.js"
       ],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "rebuilt-01-tilt",
@@ -129,7 +154,9 @@
       "href": "/studies/rebuilt-01-tilt",
       "bytes": 26160,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     },
     {
       "slug": "rebuilt-02-beams",
@@ -139,7 +166,9 @@
       "href": "/studies/rebuilt-02-beams",
       "bytes": 26947,
       "assets": [],
-      "allowances": []
+      "allowances": [],
+      "feature": null,
+      "thumb": null
     }
   ],
   "held": [
