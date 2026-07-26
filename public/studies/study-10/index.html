@@ -624,6 +624,48 @@
       color: var(--paper);
     }
 
+    .closing__act {
+      max-width: 46rem;
+      margin-top: clamp(3.5rem, 9vh, 6rem);
+      padding-top: clamp(2rem, 5vh, 3rem);
+      border-top: 1px solid var(--line-dark);
+    }
+
+    .closing__ask {
+      max-width: 36ch;
+      margin: 0 0 2rem;
+      font-family: var(--serif);
+      font-size: clamp(1.15rem, 1.8vw, 1.6rem);
+      line-height: 1.4;
+      color: var(--paper);
+    }
+
+    .closing__cta {
+      display: inline-block;
+      padding: 1.15rem 2.2rem;
+      background: var(--copper);
+      color: var(--ink-deep);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .closing__cta:hover,
+    .closing__cta:focus-visible { background: var(--paper); }
+
+    .closing__alt {
+      margin: 1.5rem 0 0;
+      color: var(--paper-dim);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .closing__alt a { color: var(--copper); }
+
     .closing__label {
       margin: 0 0 2rem;
       color: var(--copper);
@@ -823,7 +865,8 @@
       <div class="essay__body">
         <h2 id="opening-title">Effort used to be the evidence.</h2>
         <p>Software was slow to make, and the slowness did some of the work of proving quality. If a thing existed at all, somebody had spent weeks on it. You could reasonably infer care from the finished object, because carelessness rarely survived the distance.</p>
-        <p>That inference no longer holds. A convincing interface arrives before the meeting ends. A codebase looks substantial before anyone has formed an opinion worth trusting. The speed is genuine leverage, and leverage is indifferent: it multiplies a considered decision and a careless one at exactly the same rate.</p>
+        <p>That inference no longer holds. A convincing interface arrives before the meeting ends. A codebase looks substantial before anyone has formed an opinion worth trusting. Speed helps a considered decision and a careless one at exactly the same rate.</p>
+        <p>Which is where the work moved, rather than disappeared. A demo that handles the obvious path is now cheap. What is not cheap is finding the exception: the approval that loops back on itself, the customer who exists twice under two spellings, the hand-off nobody wrote down because everyone in the room already knew it. Those are not edge cases to a business. They are most of a business, and they are the difference between something that demonstrates well and something still standing on a Monday.</p>
         <p class="pull">You can no longer tell a considered decision from a fast one by looking at it.</p>
         <p>So the question a client is actually asking has changed. Not can this be built, which is now almost always yes. It is who looked closely enough to say it should be built this way, who went and found the edge case rather than the happy path, and who will tell you plainly what they did not check.</p>
         <p>That is the difference between a draft and a decision. A generated answer is a possibility. A reviewed one is a position somebody is standing behind. What follows is about the distance between those two, because the distance is now the job.</p>
@@ -869,7 +912,8 @@
       <div class="essay__body">
         <h2 id="resistance-title">A useful gate creates resistance.</h2>
         <p>Review is often described as polish, a gentle pass over something already complete. That description makes it sound optional. Good review is more structural. It asks the work to survive contact with the claims it makes.</p>
-        <p>This is not abstract. In one review here, a meter that claimed to be measuring visual drift turned out to be reporting a layout offset instead: a real number, precisely wrong, on a panel that looked authoritative. In another, a scan reported every file clean when the tool it was calling had failed to start and printed nothing. Both looked like success. Neither had checked anything at all.</p>
+        <p>This is not abstract. In a review of <a href="/studies/study-08">Study 08</a>, a meter that claimed to be measuring visual drift turned out to be reporting a layout offset instead: a real number, precisely wrong, on a panel that looked authoritative. It was replaced with one that measures the thing it names. In a later session, a scan reported every file clean when the tool it was calling had never started and printed nothing; that check now fails loudly instead of silently passing. <a href="/studies/study-11">Study 11</a> is the longer account of that second kind of failure, because it happened four times in one day.</p>
+        <p>Both looked like success. Neither had checked anything at all. The corrections are the point: a claim of quality is worth something only when you can be shown the occasion it was wrong and what changed as a result.</p>
         <p>So the habit is to distrust the surface. If a screen says a task succeeded, follow the failure path. If a panel shows a count, find out where the number comes from. If something is called verified, ask what was actually looked at, what was only inferred, and what is still unknown.</p>
         <p class="pull">A gate is valuable when it can still say no.</p>
         <p>The other half of that discipline is knowing the shape of your own ignorance. An uncertain question does not deserve a confident guess. It deserves the smaller true statement, followed by what it would take to say more: the source that is missing, the test not yet run, the condition nobody has seen the system meet. Hedging is not weakness when the hedge is specific.</p>
@@ -962,6 +1006,11 @@
         <p>The future of software is not a choice between human craft and machine speed. It is a question of where each is most valuable. Let generation widen the field. Let judgement narrow it again.</p>
         <p>Which is also true of this page. Anyone can now generate an essay about judgement in about a minute. What is not cheap is deciding what to leave out, where to let a reader rest, and which single claim is strong enough to sit alone on a plate with nothing to support it. When making is free, the arrangement is the argument.</p>
         <p>The pause between those movements is small, but consequential. It is where the claim meets the evidence, the catch becomes a correction and a possible answer becomes work someone is willing to sign.</p>
+      </div>
+      <div class="closing__act">
+        <p class="closing__ask">If a process in your business is slow or expensive, the useful first conversation is not about software. It is about where that process actually gets stuck, and whether building anything is the right answer at all.</p>
+        <a class="closing__cta" href="https://cal.com/austin-mander">Book a call</a>
+        <p class="closing__alt">Or write to <a href="mailto:hello@mander.ai?subject=Where%20it%20gets%20stuck">hello@mander.ai</a> and describe where it gets stuck.</p>
       </div>
     </section>
   </main>

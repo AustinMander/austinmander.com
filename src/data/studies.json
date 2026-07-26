@@ -9,6 +9,7 @@
       "href": "/studies/study-05",
       "bytes": 36875,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -21,6 +22,7 @@
       "href": "/studies/study-07",
       "bytes": 64969,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -33,6 +35,7 @@
       "href": "/studies/study-08",
       "bytes": 46507,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -45,6 +48,7 @@
       "href": "/studies/study-09",
       "bytes": 51329,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -55,8 +59,12 @@
       "title": "The answer is almost always yes",
       "intent": "Producing software is no longer the hard part. Almost anything a client asks for can now be built, and quickly, which means effort has stopped being evidence that anyone thought carefully about it. This essay is about what replaces that evidence: the judgement to know which answer is actually right, the discipline to go and find the edge case that speed glosses over, and the honesty to say plainly what has not been checked.",
       "href": "/studies/study-10",
-      "bytes": 37376,
+      "bytes": 39852,
       "assets": [],
+      "links": [
+        "/studies/study-08",
+        "/studies/study-11"
+      ],
       "allowances": [],
       "feature": {
         "kind": "essay",
@@ -72,6 +80,7 @@
       "href": "/studies/study-11",
       "bytes": 15699,
       "assets": [],
+      "links": [],
       "allowances": [
         {
           "id": "M2",
@@ -92,6 +101,7 @@
         "data-bundle.js",
         "render.js"
       ],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -104,6 +114,7 @@
       "href": "/studies/editions",
       "bytes": 29670,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -116,6 +127,7 @@
       "href": "/studies/foundation-sheet",
       "bytes": 51079,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -128,6 +140,7 @@
       "href": "/studies/loom",
       "bytes": 44935,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -142,6 +155,7 @@
       "assets": [
         "engine.js"
       ],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -154,6 +168,7 @@
       "href": "/studies/rebuilt-01-tilt",
       "bytes": 26160,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -166,6 +181,7 @@
       "href": "/studies/rebuilt-02-beams",
       "bytes": 26947,
       "assets": [],
+      "links": [],
       "allowances": [],
       "feature": null,
       "thumb": null
@@ -194,7 +210,7 @@
       "title": "Specimen Hall / T1",
       "reasons": [
         "internal brief ID visible on the page: T1",
-        "unresolved reference \"/src/main.js\" (needs a build step, not a copy)"
+        "unresolved asset reference \"/src/main.js\" (needs a build step, not a copy)"
       ]
     }
   ]

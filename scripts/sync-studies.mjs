@@ -74,15 +74,28 @@ function documentTitle(html) {
   return m ? m[1].trim() : "";
 }
 
-// Relative src/href references, excluding absolute URLs and in-page anchors.
-function relativeRefs(html) {
+// Assets the piece needs alongside it. Only src, because an href is a link to
+// somewhere else on the site, not a file that has to travel with the piece.
+// Conflating the two held a piece for linking to its own sibling study.
+function assetRefs(html) {
   const refs = new Set();
-  for (const m of html.matchAll(/(?:src|href)="([^"]+)"/gi)) {
+  for (const m of html.matchAll(/\bsrc="([^"]+)"/gi)) {
     const v = m[1].trim();
     if (!v || /^(https?:|data:|mailto:|tel:|#|\/\/)/i.test(v)) continue;
     refs.add(v);
   }
   return [...refs];
+}
+
+// Site-internal links, so the gate can enforce the house rule that every route
+// referenced actually exists. A link to a held piece is a 404 on a public page.
+function internalLinks(html) {
+  const links = new Set();
+  for (const m of html.matchAll(/\bhref="(\/[^"]*)"/gi)) {
+    const v = m[1].trim().split(/[?#]/)[0];
+    if (v) links.add(v);
+  }
+  return [...links];
 }
 
 // Title and intent come from NOTES.md, which every piece carries and which reads
@@ -214,27 +227,28 @@ function gate(piece, ids) {
     }
   }
 
-  // Relative references must resolve to a sibling file we can copy alongside.
-  const refs = relativeRefs(html);
+  // Asset references must resolve to a sibling file we can copy alongside.
   const assets = [];
-  for (const ref of refs) {
+  for (const ref of assetRefs(html)) {
     const clean = ref.split(/[?#]/)[0];
     const local = join(piece.dir, clean.replace(/^\.?\//, ""));
     if (clean.startsWith("/") || !existsSync(local)) {
       reasons.push(
-        `unresolved reference "${ref}" (needs a build step, not a copy)`
+        `unresolved asset reference "${ref}" (needs a build step, not a copy)`
       );
     } else {
       assets.push(clean.replace(/^\.?\//, ""));
     }
   }
 
+  const links = internalLinks(html);
+
   const feature = featureMarker(html);
   if (feature && !feature.reason) {
     reasons.push("FEATURED marker has no stated reason");
   }
 
-  return { html, notes, assets, reasons, allowances, feature };
+  return { html, notes, assets, links, reasons, allowances, feature };
 }
 
 // Pieces are served at an extensionless URL, /studies/<slug>, so a relative
@@ -416,7 +430,7 @@ function main() {
   const held = [];
 
   for (const piece of pieces) {
-    const { html, notes, assets, reasons, allowances, feature } = gate(piece, ids);
+    const { html, notes, assets, links, reasons, allowances, feature } = gate(piece, ids);
     // A featured piece keeps its own title. The "Study NN /" normalisation is for
     // the numbered craft series and would bury an essay inside it.
     const title = feature
@@ -438,6 +452,7 @@ function main() {
       href: `/studies/${piece.slug}`,
       bytes: Buffer.byteLength(html),
       assets,
+      links,
       allowances,
       feature,
       // Referenced from the gallery with an absolute path, because the gallery
@@ -463,6 +478,35 @@ function main() {
         copyFileSync(join(piece.dir, asset), to);
       }
     }
+  }
+
+  // House rule: every route a published page links to must actually exist. This
+  // runs after the loop because a piece can only be checked against the final
+  // published set, and a link to a HELD piece is a 404 on a public page. Done as
+  // one pass, not a cascade: if removing a piece breaks another piece's link,
+  // that surfaces on the next run rather than silently unravelling this one.
+  const publishedSlugs = new Set(published.map((p) => p.slug));
+  const brokenLinks = [];
+  for (const p of published) {
+    for (const link of p.links || []) {
+      const m = /^\/studies\/([^/]+)\/?$/.exec(link);
+      if (!m || m[1] === "index.html") continue;
+      if (!publishedSlugs.has(m[1])) {
+        brokenLinks.push({ slug: p.slug, link });
+      }
+    }
+  }
+  for (const b of brokenLinks) {
+    const i = published.findIndex((p) => p.slug === b.slug);
+    if (i === -1) continue;
+    const [pulled] = published.splice(i, 1);
+    publishedSlugs.delete(pulled.slug);
+    held.push({
+      slug: pulled.slug,
+      kind: pulled.kind,
+      title: pulled.title,
+      reasons: [`links to "${b.link}", which is not published, so it would 404`],
+    });
   }
 
   if (!CHECK_ONLY) {
