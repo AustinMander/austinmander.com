@@ -139,8 +139,11 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
   clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
 /* Touch targets. The draft's cells cannot reasonably be finger-sized, but the
-   controls are the interaction on a phone, so they get the full 44px. */
-@media (max-width:700px){
+   controls are the interaction on a phone, so they get the full 44px.
+   Keyed to the pointer as well as the width. A tablet is a touch device wider
+   than any phone breakpoint, and binding this to width alone handed every
+   tablet the mouse-sized controls: 26px dye swatches under a finger. */
+@media (max-width:700px), (pointer:coarse){
   .btn{min-height:44px;padding:10px 14px;display:inline-flex;align-items:center;font-size:12px}
   .dye{width:44px;height:44px}
   .speed input{min-height:44px}
@@ -961,8 +964,37 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     a.click();
   });
 
-  canvas.addEventListener("pointermove", traceFromEvent);
-  canvas.addEventListener("pointerleave", clearTrace);
+  /* Tracing a thread was written as a hover, which is a mouse idea. A finger
+   * has no hover: a tap fires pointermove and pointerleave in the same gesture,
+   * so the trace appeared and was wiped before it could be read, and the
+   * provenance panel is the whole argument of the piece.
+   *
+   * So the gesture is split by pointer type. A mouse still traces on move and
+   * clears on leave. A finger traces on tap and the trace stays put, because
+   * there is nowhere for a finger to rest. Tracing on move is deliberately NOT
+   * extended to touch: the cloth fills most of a phone screen, so a drag across
+   * it is somebody scrolling the page, and the trace must not chase that. The
+   * tap is therefore confirmed on release and only when the pointer stayed
+   * within a few pixels of where it went down. */
+  var TAP_SLOP = 10;
+  var down = null;
+  canvas.addEventListener("pointermove", function (ev) {
+    if (ev.pointerType === "mouse") traceFromEvent(ev);
+  });
+  canvas.addEventListener("pointerleave", function (ev) {
+    if (ev.pointerType === "mouse") clearTrace();
+  });
+  canvas.addEventListener("pointerdown", function (ev) {
+    down = { x: ev.clientX, y: ev.clientY, type: ev.pointerType };
+  });
+  canvas.addEventListener("pointerup", function (ev) {
+    if (!down) return;
+    var moved = Math.abs(ev.clientX - down.x) > TAP_SLOP ||
+                Math.abs(ev.clientY - down.y) > TAP_SLOP;
+    down = null;
+    if (!moved) traceFromEvent(ev);
+  });
+  canvas.addEventListener("pointercancel", function () { down = null; });
   canvas.tabIndex = 0;
   canvas.addEventListener("keydown", function (ev) {
     var t = state.trace || { pick: 0, end: 0 }, used = true;
@@ -975,7 +1007,17 @@ h1{font-family:var(--mono);font-size:clamp(30px,5.5vw,56px);font-weight:500;
     else used = false;
     if (used) ev.preventDefault();
   });
-  canvas.addEventListener("focus", function () { if (!state.trace) setTrace(0, 0); });
+  // Focus starts the keyboard walk at the first thread, so arrows have somewhere
+  // to begin. Only for keyboard focus: a finger landing on the cloth to scroll
+  // the page also focuses it, and that was putting a trace on thread one that
+  // the reader never asked for. :focus-visible is the distinction, and the
+  // try/catch keeps a browser without it behaving as before.
+  canvas.addEventListener("focus", function () {
+    if (state.trace) return;
+    var keyboard = true;
+    try { keyboard = canvas.matches(":focus-visible"); } catch (e) { keyboard = true; }
+    if (keyboard) setTrace(0, 0);
+  });
 
   window.addEventListener("resize", function () { measure(); drawCloth(); clearTrace(); });
 
