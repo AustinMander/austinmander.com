@@ -600,16 +600,24 @@
 
     .signature {
       position: absolute;
-      z-index: 3;
+      z-index: 1;
       left: 50%;
       top: 50%;
-      color: var(--paper);
+      /* Outline, not fill. This was solid cream, the same colour and weight as
+         the copy that crosses it, so the two interleaved: the A merged into
+         "The", the M into "Work", and the kicker was struck straight through.
+         Measured at 318 to 363px of overlap at full opacity, constantly, not
+         just in passing. As a stroked mark it reads as something the page is
+         signed on rather than a second headline fighting the first. */
+      color: transparent;
+      -webkit-text-stroke: 1.5px rgba(233, 229, 219, .26);
       font-family: var(--serif);
-      font-size: clamp(6rem, 18vw, 19rem);
+      font-size: clamp(5rem, 15vw, 16rem);
       font-style: italic;
       letter-spacing: -.1em;
       line-height: .7;
-      transform: translate(-54%, -48%) scale(calc(.86 + var(--beat-progress) * .12));
+      /* Pulled left so the copy, which sits right of centre, has clear ground. */
+      transform: translate(-96%, -50%) scale(calc(.86 + var(--beat-progress) * .12));
     }
 
     .signature-rule {
